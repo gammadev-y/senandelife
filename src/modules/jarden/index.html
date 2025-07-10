@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Jarden - Your Plant Knowledge Hub</title>
+
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+        font-family: 'Roboto', sans-serif;
+         min-height: 100vh; 
+         margin: 0;
+         /* Material 3 Surface Colors using Slate palette */
+         background-color: #f1f5f9; /* slate-100 (M3 Surface Container Low / Background) */
+         color: #1e293b; /* slate-800 (M3 OnSurface / OnBackground) */
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #0f172a; /* slate-900 (M3 Surface Container Lowest / Background) */
+        color: #e2e8f0; /* slate-200 (M3 OnSurface / OnBackground) */
+      }
+    }
+    #root, .app-container {
+        height: 100%;
+    }
+    /* Custom scrollbar for webkit browsers - M3 subtle style using Slate */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent; 
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #94a3b8; /* slate-400 (M3 OutlineVariant / Scrollbar color) */
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b; /* slate-500 */
+    }
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #94a3b8 transparent; /* slate-400 */
+    }
+
+    /* Ripple effect for buttons/list items (basic) - M3 uses state layers */
+    .ripple {
+      position: relative;
+      overflow: hidden;
+    }
+    .ripple:after {
+      content: "";
+      display: block;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      background-image: radial-gradient(circle, currentColor 10%, transparent 10.01%);
+      background-repeat: no-repeat;
+      background-position: 50%;
+      transform: scale(10, 10);
+      opacity: 0;
+      transition: transform .3s, opacity .5s;
+    }
+    .ripple:active:after {
+      transform: scale(0, 0);
+      opacity: .1; /* M3 state layer opacity */
+      transition: 0s;
+    }
+
+  </style>
+
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.1.0",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^4.5.2",
+    "remark-gfm": "https://esm.sh/remark-gfm@^4.0.1",
+    "@heroicons/react/": "https://esm.sh/@heroicons/react@^2.2.0/",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "vite": "https://esm.sh/vite@^6.3.5",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.50.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.6.0",
+    "react-markdown": "https://esm.sh/react-markdown@^10.1.0",
+    "browser-image-compression": "https://esm.sh/browser-image-compression@^2.0.2",
+    "base64-arraybuffer": "https://esm.sh/base64-arraybuffer@^1.0.2"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+  <div id="root"></div>
+  <script type="module" src="/src/index.tsx"></script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
