@@ -1,6 +1,7 @@
+
 import React from 'react';
 import {
-  ActiveModuleType, MonthAbbreviation, PlantCalendarTaskType, GroundLogActionType,
+  ActiveModuleType, MonthAbbreviation, PlantCalendarTaskType, GroundLogActionType, GrowingGround,
 } from './types';
 import { 
     HomeIcon as HomeOutlineIcon, MagnifyingGlassIcon, MapIcon as MapOutlineIcon, 
@@ -155,6 +156,11 @@ export const GROWING_GROUND_LABELS: Record<string, string> = {
   customNotes: "Custom Notes",
   informationSources: "Information Sources (e.g., soil test results link)"
 };
+
+export const GROUND_TYPES: GrowingGround['type'][] = [
+  'Raised Bed', 'Ground Bed', 'Pot', 'Container', 'Vertical Garden', 
+  'Greenhouse Bed', 'Hydroponics', 'Aquaponics', 'Other'
+];
 
 
 export const MODULES: {

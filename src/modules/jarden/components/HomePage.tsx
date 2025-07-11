@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { 
     UserCircleIcon, 
     ChevronRightIcon
 } from '@heroicons/react/24/solid'; 
 import { 
     ClockIcon as OutlineClockIcon, 
-    LightBulbIcon as OutlineLightBulbIcon
+    LightBulbIcon as OutlineLightBulbIcon,
+    ArrowLeftOnRectangleIcon
 } from '@heroicons/react/24/outline';
 import { CalendarEvent, GroundLogActionType, RecentViewItem, ActiveModuleType, WeatherLocationPreference, SeasonalTip } from '../types';
 import { MODULES, GROUND_LOG_ACTION_TYPE_ICONS } from '../constants';
@@ -26,9 +28,11 @@ interface HomePageCardProps {
   onClick?: () => void;
   itemType?: RecentViewItem['item_type']; 
   baseColorClass?: string;
+  isLink?: boolean;
+  to?: string;
 }
 
-const HomePageCard: React.FC<HomePageCardProps> = ({ title, description, imageUrl, imagePositionY = 50, icon: Icon, onClick, itemType, baseColorClass = 'blue' }) => {
+const HomePageCard: React.FC<HomePageCardProps> = ({ title, description, imageUrl, imagePositionY = 50, icon: Icon, onClick, itemType, baseColorClass = 'blue', isLink = false, to = '#' }) => {
   
   const renderStockIcon = () => {
     const stockIconProps = { className: `w-full h-full object-contain p-4 text-${baseColorClass}-400 dark:text-${baseColorClass}-500` };
@@ -42,13 +46,13 @@ const HomePageCard: React.FC<HomePageCardProps> = ({ title, description, imageUr
     }
   };
 
-  return (
-    <div 
-      className={`bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden cursor-pointer transition-all hover:shadow-xl active:scale-[0.98]`}
-      onClick={onClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onClick && onClick()}
+  const CardContent = () => (
+     <div 
+      className={`bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden transition-all hover:shadow-xl ${!isLink && 'cursor-pointer active:scale-[0.98]'}`}
+      onClick={!isLink ? onClick : undefined}
+      role={!isLink ? "button" : undefined}
+      tabIndex={!isLink ? 0 : -1}
+      onKeyDown={(e) => !isLink && (e.key === 'Enter' || e.key === ' ') && onClick && onClick()}
       aria-label={`View ${title}`}
     >
       <div className="w-full h-32 bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
@@ -67,6 +71,12 @@ const HomePageCard: React.FC<HomePageCardProps> = ({ title, description, imageUr
       </div>
     </div>
   );
+
+  if (isLink) {
+    return <Link to={to} className="no-underline active:scale-[0.98] block transition-transform"><CardContent /></Link>
+  }
+
+  return <CardContent />;
 };
 
 interface HomePageProps {
@@ -201,30 +211,26 @@ const HomePage: React.FC<HomePageProps> = ({
       )}
 
       {/* Separator and Section 3: Recently Viewed */}
-      {displayRecentViews.length > 0 && (
-         <>
-          <hr className="border-slate-200 dark:border-slate-700"/>
-          <section>
-            <h2 className="text-lg font-semibold mb-3 text-slate-700 dark:text-slate-200 px-1 flex items-center">
-              <OutlineClockIcon className="w-5 h-5 mr-2 text-slate-500 dark:text-slate-400" />
-              Recently Viewed
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {displayRecentViews.map(item => (
-                <HomePageCard
-                  key={item.item_id} 
-                  title={item.item_name}
-                  imageUrl={item.item_image_url}
-                  onClick={() => onNavigateToRecentItem(item)}
-                  itemType={item.item_type}
-                  baseColorClass={MODULES.find(m => m.id === item.item_module_id)?.baseColorClass || 'gray'}
-                  imagePositionY={item.item_type === 'seasonal_tip' ? (seasonalTips.find(st => st.id === item.item_id)?.imagePosY || 50) : 50}
-                />
-              ))}
-            </div>
-          </section>
-        </>
-      )}
+      <hr className="border-slate-200 dark:border-slate-700"/>
+      <section>
+        <h2 className="text-lg font-semibold mb-3 text-slate-700 dark:text-slate-200 px-1 flex items-center">
+          <OutlineClockIcon className="w-5 h-5 mr-2 text-slate-500 dark:text-slate-400" />
+          Quick Access
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {displayRecentViews.slice(0, 4).map(item => (
+            <HomePageCard
+              key={item.item_id} 
+              title={item.item_name}
+              imageUrl={item.item_image_url}
+              onClick={() => onNavigateToRecentItem(item)}
+              itemType={item.item_type}
+              baseColorClass={MODULES.find(m => m.id === item.item_module_id)?.baseColorClass || 'gray'}
+              imagePositionY={item.item_type === 'seasonal_tip' ? (seasonalTips.find(st => st.id === item.item_id)?.imagePosY || 50) : 50}
+            />
+          ))}
+        </div>
+      </section>
 
       {/* Separator and Section 4: Seasonal Tips */}
       {latestSeasonalTips.length > 0 && (
@@ -249,9 +255,8 @@ const HomePage: React.FC<HomePageProps> = ({
                         imagePositionY={tip.imagePosY}
                         onClick={() => {
                             onNavigateToModule('seasonaltips');
-                            // Ensure we pass the necessary fields for RecentViewItem, even if they are null/undefined
                             onNavigateToRecentItem({ 
-                                id: tip.id, // This assumes tip.id can serve as RecentViewItem.id, or generate one
+                                id: tip.id, 
                                 item_id: tip.id, 
                                 item_type: 'seasonal_tip', 
                                 item_name: tip.title, 

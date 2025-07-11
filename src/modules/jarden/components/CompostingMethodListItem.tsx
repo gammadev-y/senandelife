@@ -19,12 +19,12 @@ const CompostingMethodListItem: React.FC<CompostingMethodListItemProps> = ({ met
   const imagePosition = method.data.image_object_position_y || 50;
 
   const selectedItemClasses = `ring-2 ring-${moduleConfig.baseColorClass}-500 dark:ring-${moduleConfig.baseColorClass}-400 bg-${moduleConfig.baseColorClass}-50 dark:bg-${moduleConfig.baseColorClass}-900/50`;
-  const normalItemClasses = 'bg-white dark:bg-slate-800 hover:shadow-lg dark:hover:bg-slate-700/70';
+  const normalItemClasses = 'bg-white dark:bg-slate-800 hover:shadow-xl dark:hover:bg-slate-700/70';
     
   return (
     <li
       onClick={() => onSelectMethod(method.id)}
-      className={`flex flex-col rounded-xl cursor-pointer transition-all duration-200 ease-in-out ripple shadow-md active:scale-[0.97] overflow-hidden ${isSelected ? selectedItemClasses : normalItemClasses}`}
+      className={`flex flex-col rounded-2xl cursor-pointer transition-all duration-300 ease-in-out ripple shadow-md active:scale-[0.97] overflow-hidden ${isSelected ? selectedItemClasses : normalItemClasses}`}
       role="button"
       aria-pressed={isSelected}
       tabIndex={0}

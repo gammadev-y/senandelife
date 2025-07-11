@@ -26,9 +26,11 @@ const UserAvatar: React.FC<UserAvatarProps> = ({ avatarUrl, size = 'md', classNa
   }
 
   return (
-    <UserCircleIcon
-      className={`rounded-full text-slate-400 dark:text-slate-500 ${sizeClasses[size]} ${className}`}
-    />
+    <div className={`rounded-full flex items-center justify-center bg-slate-200 dark:bg-slate-700 ${sizeClasses[size]} ${className}`}>
+        <UserCircleIcon
+        className={`text-slate-400 dark:text-slate-500 w-[90%] h-[90%]`}
+        />
+    </div>
   );
 };
 

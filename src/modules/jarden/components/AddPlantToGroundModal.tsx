@@ -88,14 +88,14 @@ const AddPlantToGroundModal: React.FC<AddPlantToGroundModalProps> = ({
     }
   };
   
-  const inputBaseStyles = `block w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none sm:text-sm bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 ${focusRingClass} ${focusBorderClass}`;
+  const inputBaseStyles = `block w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-2xl shadow-sm focus:outline-none sm:text-sm bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 ${focusRingClass} ${focusBorderClass}`;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 print:hidden" aria-modal="true" role="dialog">
       <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-xl transform transition-all max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center mb-5">
           <h2 className="text-xl font-medium text-slate-800 dark:text-slate-100">Add Plant to Ground</h2>
-          <button onClick={onClose} className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full" aria-label="Close modal">
+          <button onClick={onClose} className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors duration-200 ease-in-out" aria-label="Close modal">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
@@ -104,7 +104,7 @@ const AddPlantToGroundModal: React.FC<AddPlantToGroundModalProps> = ({
             <nav className="-mb-px flex space-x-4" aria-label="Tabs">
                 <button
                     onClick={() => setMode('select')}
-                    className={`${mode === 'select' ? activeTabClass : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
+                    className={`${mode === 'select' ? activeTabClass : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-all duration-200 ease-in-out`}
                 >
                     Select Existing Plant
                 </button>
@@ -114,7 +114,7 @@ const AddPlantToGroundModal: React.FC<AddPlantToGroundModalProps> = ({
                         onAddNewPlant();
                         onClose(); 
                     }}
-                    className={`${mode === 'create' ? activeTabClass : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
+                    className={`${mode === 'create' ? activeTabClass : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-all duration-200 ease-in-out`}
                 >
                     Create New Plant Entry
                 </button>
@@ -127,7 +127,7 @@ const AddPlantToGroundModal: React.FC<AddPlantToGroundModalProps> = ({
           <div className="space-y-4 flex-grow overflow-y-auto custom-scrollbar pr-2">
             <div>
               <label htmlFor="plantSearch" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Search Existing Plants</label>
-              <div className="mt-1 relative rounded-lg shadow-sm">
+              <div className="mt-1 relative rounded-2xl shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <MagnifyingGlassIcon className="h-5 w-5 text-slate-400 dark:text-slate-500" aria-hidden="true" />
                 </div>
@@ -137,17 +137,17 @@ const AddPlantToGroundModal: React.FC<AddPlantToGroundModalProps> = ({
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search by name or scientific name..."
-                  className={`block w-full pl-10 pr-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none ${focusRingClass} ${focusBorderClass} sm:text-sm bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400`}
+                  className={`block w-full pl-10 pr-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-2xl focus:outline-none ${focusRingClass} ${focusBorderClass} sm:text-sm bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400`}
                 />
               </div>
             </div>
             
-            <div className="max-h-60 overflow-y-auto border border-slate-300 dark:border-slate-600 rounded-lg p-1.5 space-y-1 custom-scrollbar">
+            <div className="max-h-60 overflow-y-auto border border-slate-300 dark:border-slate-600 rounded-2xl p-1.5 space-y-1 custom-scrollbar">
               {filteredExistingPlants.length > 0 ? filteredExistingPlants.map(plant => (
                 <button
                   key={plant.id}
                   onClick={() => setSelectedPlantId(plant.id)}
-                  className={`w-full text-left p-2.5 rounded-md transition-colors ${selectedPlantId === plant.id ? `${selectedItemBgClass} ${selectedItemTextClass}` : 'hover:bg-slate-200 dark:hover:bg-slate-700/70 text-slate-800 dark:text-slate-100'}`}
+                  className={`w-full text-left p-2.5 rounded-xl transition-colors duration-200 ease-in-out ${selectedPlantId === plant.id ? `${selectedItemBgClass} ${selectedItemTextClass}` : 'hover:bg-slate-200 dark:hover:bg-slate-700/70 text-slate-800 dark:text-slate-100'}`}
                 >
                   {plant.plant_identification_overview.common_names[0] || 'Unnamed Plant'} <span className="text-xs text-slate-500 dark:text-slate-400">({plant.plant_identification_overview.latin_name_scientific_name || 'N/A'})</span>
                 </button>
@@ -187,11 +187,11 @@ const AddPlantToGroundModal: React.FC<AddPlantToGroundModalProps> = ({
 
 
         <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-slate-300 dark:border-slate-700">
-          <button type="button" onClick={onClose} className={`px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400`}>
+          <button type="button" onClick={onClose} className={`px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400 transition-all duration-200 ease-in-out`}>
             Cancel
           </button>
           {mode === 'select' && (
-            <button type="button" onClick={handleSubmit} disabled={!selectedPlantId} className={`px-6 py-2 text-sm font-medium text-white ${primaryButtonBgClass} rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 ${primaryButtonRingClass} disabled:opacity-50`}>
+            <button type="button" onClick={handleSubmit} disabled={!selectedPlantId} className={`px-6 py-2 text-sm font-medium text-white ${primaryButtonBgClass} rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 ${primaryButtonRingClass} disabled:opacity-50 transition-all duration-200 ease-in-out`}>
               Add to Ground
             </button>
           )}

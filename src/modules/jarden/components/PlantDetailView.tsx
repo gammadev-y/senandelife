@@ -16,7 +16,8 @@ import EditableText from './EditableText';
 import LoadingSpinner from './LoadingSpinner';
 import { getAiAssistedDataForPlantSection, generatePlantImageWithAi } from '../services/geminiService';
 import { convertFileToBase64 } from '../utils/imageUtils';
-import { produce } from 'immer';
+// @ts-ignore
+import { produce } from 'https://esm.sh/immer@10.0.3';
 import PlantStockIcon from './icons/PlantStockIcon';
 import { deepMerge, isObject } from '../utils/objectUtils';
 
@@ -158,23 +159,20 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
   const handleSaveField = (path: string, value: any) => {
     if (!isEditing || !editedPlantData) return;
   
-    setEditedPlantData(prev => {
-      if (!prev) return prev;
-      return produce(prev, (draft: Partial<Plant>) => {
-        let current = draft as any;
-        const keys = path.split('.');
-        keys.forEach((key, index) => {
-          if (index === keys.length - 1) {
-            current[key] = value;
-          } else {
-            if (!current[key] || typeof current[key] !== 'object') {
-              current[key] = {}; 
-            }
-            current = current[key];
+    setEditedPlantData(produce((draft: any) => {
+      let current = draft as any;
+      const keys = path.split('.');
+      keys.forEach((key, index) => {
+        if (index === keys.length - 1) {
+          current[key] = value;
+        } else {
+          if (!current[key] || typeof current[key] !== 'object') {
+            current[key] = {}; 
           }
-        });
+          current = current[key];
+        }
       });
-    });
+    }));
   };
   
   const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,7 +197,7 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
 
   const handleSaveChanges = () => {
     if (plant && editedPlantData) {
-      const dataToSave = produce(editedPlantData, (draft: Partial<Plant>) => {
+      const dataToSave = produce(editedPlantData, (draft: any) => {
         draft.image_object_position_y = imageObjectPositionY;
       });
       onUpdatePlant(plant.id, dataToSave);
@@ -225,21 +223,18 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
     try {
       const aiSectionDataWrapper = await getAiAssistedDataForPlantSection(plant.plant_identification_overview.common_names[0] || 'Plant', sectionKey, plant);
       
-      setEditedPlantData(prev => {
-        if (!prev) return prev;
-        return produce(prev, (draft: Plant | null) => {
-          if (draft && aiSectionDataWrapper && (aiSectionDataWrapper as any)[sectionKey]) { 
-              const currentSectionInDraft = (draft as Record<string, any>)[sectionKey];
-              const aiProvidedDataForSection = (aiSectionDataWrapper as Record<string, any>)[sectionKey];
+      setEditedPlantData(produce((draft: Plant | null) => {
+        if (draft && aiSectionDataWrapper && (aiSectionDataWrapper as any)[sectionKey]) { 
+            const currentSectionInDraft = (draft as Record<string, any>)[sectionKey];
+            const aiProvidedDataForSection = (aiSectionDataWrapper as Record<string, any>)[sectionKey];
 
-              if (isObject(currentSectionInDraft) && isObject(aiProvidedDataForSection)) {
-                  (draft as Record<string, any>)[sectionKey] = deepMerge(currentSectionInDraft, aiProvidedDataForSection);
-              } else {
-                  (draft as Record<string, any>)[sectionKey] = aiProvidedDataForSection;
-              }
-          }
-        });
-      });
+            if (isObject(currentSectionInDraft) && isObject(aiProvidedDataForSection)) {
+                (draft as Record<string, any>)[sectionKey] = deepMerge(currentSectionInDraft, aiProvidedDataForSection);
+            } else {
+                (draft as Record<string, any>)[sectionKey] = aiProvidedDataForSection;
+            }
+        }
+      }));
 
     } catch (err) {
       console.error(`Error AI filling section ${sectionKey}:`, err);
@@ -274,23 +269,16 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
   };
 
   const handleImagePositionChange = (direction: 'up' | 'down' | 'reset') => {
-    if (!isEditing) return;
-    let newPosition = imageObjectPositionY;
-    const step = 5;
-    if (direction === 'up') {
-        newPosition = Math.max(0, imageObjectPositionY - step);
-    } else if (direction === 'down') {
-        newPosition = Math.min(100, imageObjectPositionY + step);
-    } else if (direction === 'reset') {
-        newPosition = 50;
-    }
-    setImageObjectPositionY(newPosition);
-    setEditedPlantData(prev => {
-      if (!prev) return prev;
-      return produce(prev, (draft: Partial<Plant>) => {
-        draft.image_object_position_y = newPosition;
-      });
-    });
+    setImageObjectPositionY(produce((draft: any) => {
+      if (direction === 'up') {
+        draft = Math.min(100, (draft || 50) + 5);
+      } else if (direction === 'down') {
+        draft = Math.max(0, (draft || 50) - 5);
+      } else if (direction === 'reset') {
+        draft = 50;
+      }
+      return draft;
+    }));
   };
 
 
@@ -427,8 +415,8 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
 
         <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
           <EditableText currentValue={commonName} onSave={val => handleSaveField('plant_identification_overview.common_names.0', val)} labelText="" textClassName="text-3xl md:text-4xl font-bold text-white shadow-lg" inputFieldClass="text-3xl md:text-4xl font-bold" disabled={!isEditing} />
+          {/* Changed neutral to slate */}
           {idOverview.latin_name_scientific_name && (
-            // Changed neutral to slate
             <EditableText currentValue={idOverview.latin_name_scientific_name} onSave={val => handleSaveField('plant_identification_overview.latin_name_scientific_name', val)} labelText="" textClassName="text-md text-slate-200 italic" inputFieldClass="text-md italic" disabled={!isEditing} />
           )}
         </div>
@@ -569,10 +557,10 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
 
 
          <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center p-3 items-center">
-              <button onClick={() => plant && onPopulateWithStandardAI(plant.id)} disabled={isLoadingAi || isEditing || !plant} title="Populate with AI (Standard)" className={`flex items-center justify-center px-4 py-2 text-sm font-medium bg-sky-100 text-sky-700 dark:bg-sky-700 dark:text-sky-200 rounded-full shadow-sm hover:bg-sky-200 dark:hover:bg-sky-600 transition-colors disabled:opacity-50`}>
+              <button onClick={() => plant && onPopulateWithStandardAI(plant.id)} disabled={isLoadingAi || isEditing} title="Populate with AI (Standard)" className={`flex items-center justify-center px-4 py-2 text-sm font-medium bg-sky-100 text-sky-700 dark:bg-sky-700 dark:text-sky-200 rounded-full shadow-sm hover:bg-sky-200 dark:hover:bg-sky-600 transition-colors disabled:opacity-50`}>
                 {isLoadingAi ? <LoadingSpinner size="sm" color="text-sky-600 dark:text-sky-300"/> : <OutlineSparklesIcon className="w-5 h-5 mr-1.5" />} AI Fill All Details
               </button>
-              <button onClick={() => plant && onOpenCustomAiPromptModal({ plantId: plant.id, plantName: commonName })} disabled={isLoadingAi || isEditing || !plant} title="Custom AI Prompt" className={`flex items-center justify-center px-4 py-2 text-sm font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-700 dark:text-indigo-200 rounded-full shadow-sm hover:bg-indigo-200 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50`}>
+              <button onClick={() => plant && onOpenCustomAiPromptModal({ plantId: plant.id, plantName: commonName })} disabled={isLoadingAi || isEditing} title="Custom AI Prompt" className={`flex items-center justify-center px-4 py-2 text-sm font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-700 dark:text-indigo-200 rounded-full shadow-sm hover:bg-indigo-200 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50`}>
                 <CommandLineIcon className="w-5 h-5 mr-1.5" /> Custom AI (All)
               </button>
                <button onClick={() => setIsJsonModalOpen(true)} disabled={isEditing} title="View Raw Plant Data" className={`flex items-center justify-center px-4 py-2 text-sm font-medium bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded-full shadow-sm hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-50`}> {/* Changed neutral to slate */}

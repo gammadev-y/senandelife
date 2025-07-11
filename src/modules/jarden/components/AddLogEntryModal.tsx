@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef } from 'react';
 import { GroundLogEntry, GroundLogActionType } from '../types';
 import { GROUND_LOG_ACTION_TYPES, MODULES } from '../constants';
@@ -83,7 +84,7 @@ const AddLogEntryModal: React.FC<AddLogEntryModalProps> = ({ isOpen, onClose, on
       <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-lg transform transition-all max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center mb-5">
           <h2 className="text-xl font-medium text-slate-800 dark:text-slate-100">Add Log Entry</h2>
-          <button onClick={() => { clearForm(); onClose();}} className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full" aria-label="Close modal">
+          <button type="button" onClick={() => { clearForm(); onClose();}} className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full" aria-label="Close modal">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>

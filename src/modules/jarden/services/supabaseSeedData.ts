@@ -9,14 +9,7 @@ export const INITIAL_PLANTS_DATA_FOR_SEEDING: Partial<Plant>[] = [
     id: 'seed-rose-1', // Temporary ID for seeding, Supabase will generate UUID
     display_image_url: 'https://images.unsplash.com/photo-1597362924806-111709535975?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80',
     image_object_position_y: 50,
-    latin_name_scientific_name: 'Rosa spp.', // This will be used for ON CONFLICT
-    common_names: ['Rose'],
-    plant_family: 'Rosaceae',
-    plant_type_category: 'Deciduous shrub/climber',
-    description_brief: 'Roses are iconic flowering plants known for their beautiful and often fragrant blooms, with thorny stems and diverse growth habits.',
-    cultivar_variety: 'Various (e.g., Hybrid Tea, Floribunda, Shrub Rose)',
-    growth_structure_habit: 'Shrub, Climber',
-    life_cycle: 'Perennial - Deciduous',
+    parent_plant_id: null,
     plant_identification_overview: {
         common_names: ['Rose'],
         latin_name_scientific_name: 'Rosa spp.',
@@ -24,7 +17,6 @@ export const INITIAL_PLANTS_DATA_FOR_SEEDING: Partial<Plant>[] = [
         plant_type_category: 'Deciduous shrub/climber',
         description_brief: 'Roses are iconic flowering plants known for their beautiful and often fragrant blooms, with thorny stems and diverse growth habits.',
         cultivar_variety: 'Various (e.g., Hybrid Tea, Floribunda, Shrub Rose)',
-        parent_plant_link_encyclopedia_id: null,
         growth_structure_habit: 'Shrub, Climber',
         expected_mature_height_meters: { min: 0.3, max: 7, text_range: '0.3m - 7m depending on type' },
         expected_mature_spread_width_meters: { min: 0.3, max: 3, text_range: '0.3m - 3m' },
@@ -60,14 +52,7 @@ export const INITIAL_PLANTS_DATA_FOR_SEEDING: Partial<Plant>[] = [
     id: 'seed-lavender-1',
     display_image_url: 'https://images.unsplash.com/photo-1550900100-983a1998d52c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80',
     image_object_position_y: 50,
-    latin_name_scientific_name: 'Lavandula spp.', // ON CONFLICT target
-    common_names: ['Lavender'],
-    plant_family: 'Lamiaceae',
-    plant_type_category: 'Perennial herb/Subshrub',
-    description_brief: 'Known for its aromatic flowers and foliage. Drought-tolerant once established.',
-    cultivar_variety: 'English (L. angustifolia), French (L. dentata), etc.',
-    growth_structure_habit: 'Subshrub, Perennial Herb',
-    life_cycle: 'Perennial - Evergreen (typically)',
+    parent_plant_id: null,
     plant_identification_overview: {
         common_names: ['Lavender'],
         latin_name_scientific_name: 'Lavandula spp.',
@@ -75,7 +60,6 @@ export const INITIAL_PLANTS_DATA_FOR_SEEDING: Partial<Plant>[] = [
         plant_type_category: 'Perennial herb/Subshrub',
         description_brief: 'Known for its aromatic flowers and foliage. Drought-tolerant once established.',
         cultivar_variety: 'English (L. angustifolia), French (L. dentata), etc.',
-        parent_plant_link_encyclopedia_id: null,
         growth_structure_habit: 'Subshrub, Perennial Herb',
         expected_mature_height_meters: { min: 0.3, max: 1, text_range: '0.3m - 1m' },
         expected_mature_spread_width_meters: { min: 0.3, max: 1, text_range: '0.3m - 1m' },

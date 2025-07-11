@@ -74,7 +74,7 @@ const AddNewPlantModal: React.FC<AddNewPlantModalProps> = ({ isOpen, onClose, on
           <h2 className="text-xl font-medium text-slate-800 dark:text-slate-100">Add New Plant</h2>
           <button
             onClick={() => { clearForm(); onClose(); }}
-            className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full"
+            className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors duration-200 ease-in-out"
             aria-label="Close modal"
           >
             <XMarkIcon className="w-5 h-5" />
@@ -144,7 +144,7 @@ const AddNewPlantModal: React.FC<AddNewPlantModalProps> = ({ isOpen, onClose, on
                 <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className={`px-3 py-1.5 text-xs font-medium text-${moduleConfig.baseColorClass}-700 bg-${moduleConfig.baseColorClass}-100 hover:bg-${moduleConfig.baseColorClass}-200 dark:text-${moduleConfig.baseColorClass}-200 dark:bg-${moduleConfig.baseColorClass}-700 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm flex items-center`}
+                    className={`px-3 py-1.5 text-xs font-medium text-${moduleConfig.baseColorClass}-700 bg-${moduleConfig.baseColorClass}-100 hover:bg-${moduleConfig.baseColorClass}-200 dark:text-${moduleConfig.baseColorClass}-200 dark:bg-${moduleConfig.baseColorClass}-700 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm flex items-center transition-all duration-200 ease-in-out`}
                 >
                     <ArrowUpTrayIcon className="w-4 h-4 mr-1.5" />
                     Upload
@@ -156,7 +156,7 @@ const AddNewPlantModal: React.FC<AddNewPlantModalProps> = ({ isOpen, onClose, on
                             setImageBase64(null);
                             if(fileInputRef.current) fileInputRef.current.value = '';
                         }}
-                        className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full"
+                        className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full transition-all duration-200 ease-in-out"
                     >
                         Remove
                     </button>
@@ -170,14 +170,14 @@ const AddNewPlantModal: React.FC<AddNewPlantModalProps> = ({ isOpen, onClose, on
           <button
             type="button"
             onClick={() => { clearForm(); onClose(); }}
-            className={`px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400`}
+            className={`px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400 transition-all duration-200 ease-in-out`}
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className={`px-6 py-2 text-sm font-medium text-white bg-${moduleConfig.baseColorClass}-600 hover:bg-${moduleConfig.baseColorClass}-700 dark:bg-${moduleConfig.baseColorClass}-500 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 focus:ring-${moduleConfig.baseColorClass}-500`}
+            className={`px-6 py-2 text-sm font-medium text-white bg-${moduleConfig.baseColorClass}-600 hover:bg-${moduleConfig.baseColorClass}-700 dark:bg-${moduleConfig.baseColorClass}-500 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 focus:ring-${moduleConfig.baseColorClass}-500 transition-all duration-200 ease-in-out`}
           >
             Save Plant
           </button>

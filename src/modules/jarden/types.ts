@@ -36,7 +36,6 @@ export interface PlantIdentificationOverview {
   plant_type_category: string; 
   description_brief: string; 
   cultivar_variety: string | null;
-  parent_plant_link_encyclopedia_id: string | null; 
   growth_structure_habit: string; 
   expected_mature_height_meters: TextRange;
   expected_mature_spread_width_meters: TextRange;
@@ -480,20 +479,14 @@ export interface UserSourcingInformation {
 }
 
 // Main Plant Interface (Frontend Model)
+// Cleaned up to remove redundant top-level properties.
+// The single source of truth for identification fields is now 'plant_identification_overview'.
 export interface Plant {
   id: string; 
-  latin_name_scientific_name: string; 
-  common_names: string[]; 
-  plant_family: string; 
-  plant_type_category: string; 
-  description_brief: string; 
-  cultivar_variety: string | null; 
-  parent_plant_id?: string | null; 
-  growth_structure_habit: string; 
-  life_cycle: string; 
-  
+  parent_plant_id?: string | null; // This is a direct column, so it stays.
   display_image_url: string | null;
   image_object_position_y?: number; // 0-100, default 50
+  
   plant_identification_overview: PlantIdentificationOverview; 
   key_features_uses_general: KeyFeaturesUsesGeneral;
   cultivation_growing_conditions: CultivationGrowingConditions;

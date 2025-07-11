@@ -1,12 +1,17 @@
 
+
+
+
+
+
 import { supabase } from '../../../../services/supabase';
 import {
   Plant, PlantInput, Fertilizer, FertilizerInput, CompostingMethod, CompostingMethodInput,
   PestGuardian, GrowHowTechnique, FloraPediaTableRow, PlantIdentificationOverview,
-  GrowingGround, GrowingGroundInput, GrowingGroundData, KeyFeaturesUsesGeneral, CultivationGrowingConditions, PlantNutritionFertilizationNeeds, PlantCareMaintenance, GrowthStageTimelinesDaysFromSowing, EcologicalInteractions, FruitingHarvestingConditional, UseCasesHumanSymbiosis, SeedSavingStorageDetails, LightRequirementsGeneral, WaterRequirementsGeneral, SoilRequirementsGeneral, EnvironmentalTolerancesDetailed, AirTemperatureCelsius, RelativeHumidityPercentage, LightIntensityLux, PlacementSpacing, ToxicityDetail, TextRange, HardinessZones, PruningShaping, RepottingForContainerPlants, PropagationMethodsSummary, SeedPropagationDetails, CuttingPropagationDetails, GraftingPropagationDetails, GrowthStageTimelineEntry, PestInteractions, DiseaseSusceptibility, PestDiseaseManagementSpecificStrategies, CompanionPlanting, PollinatorsWildlifeInteraction, FloweringPollinationForFruitSet, FruitVegetableDevelopmentEnhancement, HarvestingDetails, CulinaryUseItem, PreservationConservationTechnique, AlternativeProductUseItem, MedicinalUseItem, SeedSavingHarvestingGuide, OptimalSeedStorageConditions, FertilizerData, CompostingMethodData, RecentViewItem, ItemTypeForRecentView, ActiveModuleType, SeasonalTip, SeasonalTipInput, UserSourcingInformation, UserProfile, TipImage
+  GrowingGround, GrowingGroundInput, GrowingGroundData, KeyFeaturesUsesGeneral, CultivationGrowingConditions, PlantNutritionFertilizationNeeds, PlantCareMaintenance, GrowthStageTimelinesDaysFromSowing, EcologicalInteractions, FruitingHarvestingConditional, UseCasesHumanSymbiosis, SeedSavingStorageDetails, LightRequirementsGeneral, WaterRequirementsGeneral, SoilRequirementsGeneral, EnvironmentalTolerancesDetailed, AirTemperatureCelsius, RelativeHumidityPercentage, LightIntensityLux, PlacementSpacing, ToxicityDetail, TextRange, HardinessZones, PruningShaping, RepottingForContainerPlants, PropagationMethodsSummary, SeedPropagationDetails, CuttingPropagationDetails, GraftingPropagationDetails, GrowthStageTimelineEntry, PestInteractions, DiseaseSusceptibility, PestDiseaseManagementSpecificStrategies, CompanionPlanting, PollinatorsWildlifeInteraction, FloweringPollinationForFruitSet, FruitVegetableDevelopmentEnhancement, HarvestingDetails, CulinaryUseItem, PreservationConservationTechnique, AlternativeProductUseItem, MedicinalUseItem, SeedSavingHarvestingGuide, OptimalSeedStorageConditions, FertilizerData, CompostingMethodData, RecentViewItem, ItemTypeForRecentView, ActiveModuleType, SeasonalTip, SeasonalTipInput, UserSourcingInformation, UserProfile, TipImage, GroundLogEntry
 } from '../types';
 import { PlantListItemData, SeasonalTipListItemData } from './idbServiceTypes'; 
-import { produce } from 'immer';
+import { produce } from 'https://esm.sh/immer@10.0.3' ;
 import { INITIAL_PLANTS_DATA_FOR_SEEDING, INITIAL_FERTILIZERS_DATA_FOR_SEEDING, INITIAL_COMPOSTING_METHODS_DATA_FOR_SEEDING } from './supabaseSeedData';
 import { decode } from 'base64-arraybuffer';
 import { deepMerge, isObject } from '../utils/objectUtils';
@@ -52,7 +57,6 @@ const getDefaultPlantIdentificationOverview = (row?: Partial<FloraPediaTableRow>
     plant_type_category: row?.plant_type_category || jsonDataPio?.plant_type_category || defaultTextVal,
     description_brief: row?.description_brief || jsonDataPio?.description_brief || "Awaiting detailed description.",
     cultivar_variety: row?.cultivar_variety || jsonDataPio?.cultivar_variety || null,
-    parent_plant_link_encyclopedia_id: row?.parent_plant_id || jsonDataPio?.parent_plant_link_encyclopedia_id || null,
     growth_structure_habit: row?.growth_structure_habit || jsonDataPio?.growth_structure_habit || defaultTextVal,
     expected_mature_height_meters: jsonDataPio?.expected_mature_height_meters || defaultTextRange,
     expected_mature_spread_width_meters: jsonDataPio?.expected_mature_spread_width_meters || defaultTextRange,
@@ -180,21 +184,15 @@ const getDefaultUserSourcingInformation = (row: FloraPediaTableRow, jsonDataUsi?
 export const mapFloraPediaRowToPlant = (row: FloraPediaTableRow): Plant => {
   const jsonData = row.data || {};
 
+  // Construct the single source of truth for identification from the row and its JSONB data.
+  const pio = getDefaultPlantIdentificationOverview(row, jsonData.plant_identification_overview);
+
   return {
     id: row.id,
-    latin_name_scientific_name: row.latin_name_scientific_name,
-    common_names: row.common_names || [],
-    plant_family: row.plant_family || 'N/A',
-    plant_type_category: row.plant_type_category || 'N/A',
-    description_brief: row.description_brief || 'N/A',
-    cultivar_variety: row.cultivar_variety || null,
     parent_plant_id: row.parent_plant_id || undefined,
-    growth_structure_habit: row.growth_structure_habit || 'N/A',
-    life_cycle: row.life_cycle || 'N/A',
-
     display_image_url: jsonData.display_image_url || null,
     image_object_position_y: jsonData.image_object_position_y === undefined ? 50 : jsonData.image_object_position_y,
-    plant_identification_overview: getDefaultPlantIdentificationOverview(row, jsonData.plant_identification_overview),
+    plant_identification_overview: pio,
     key_features_uses_general: getDefaultKeyFeaturesUsesGeneral(jsonData.key_features_uses_general),
     cultivation_growing_conditions: getDefaultCultivationGrowingConditions(jsonData.cultivation_growing_conditions),
     plant_nutrition_fertilization_needs: getDefaultPlantNutritionFertilizationNeeds(jsonData.plant_nutrition_fertilization_needs),
@@ -214,15 +212,7 @@ export const mapFloraPediaRowToPlant = (row: FloraPediaTableRow): Plant => {
 const mapPlantToFloraPediaRow = (plant: Partial<Plant>): Omit<FloraPediaTableRow, 'id' | 'created_at' | 'updated_at'> => {
   const {
     id, created_at, updated_at, 
-    latin_name_scientific_name: direct_latin_name,
-    common_names: direct_common_names,
-    plant_family: direct_plant_family,
-    plant_type_category: direct_plant_type_category,
-    description_brief: direct_description_brief,
-    cultivar_variety: direct_cultivar_variety,
     parent_plant_id: direct_parent_plant_id,
-    growth_structure_habit: direct_growth_structure_habit,
-    life_cycle: direct_life_cycle,
     display_image_url,
     image_object_position_y,
     plant_identification_overview: pioSource, 
@@ -240,15 +230,15 @@ const mapPlantToFloraPediaRow = (plant: Partial<Plant>): Omit<FloraPediaTableRow
     ...otherJsonData 
   } = plant;
 
-  const ln = pioSource?.latin_name_scientific_name ?? direct_latin_name ?? "Unknown latin name";
-  const cn = pioSource?.common_names ?? direct_common_names ?? [];
-  const pf = pioSource?.plant_family ?? direct_plant_family ?? null;
-  const ptc = pioSource?.plant_type_category ?? direct_plant_type_category ?? null;
-  const db = pioSource?.description_brief ?? direct_description_brief ?? null;
-  const cv = pioSource?.cultivar_variety ?? direct_cultivar_variety ?? null;
-  const ppid = pioSource?.parent_plant_link_encyclopedia_id ?? direct_parent_plant_id ?? null;
-  const gsh = pioSource?.growth_structure_habit ?? direct_growth_structure_habit ?? null;
-  const lc = pioSource?.life_cycle ?? direct_life_cycle ?? null;
+  const ln = pioSource?.latin_name_scientific_name ?? "Unknown latin name";
+  const cn = pioSource?.common_names ?? [];
+  const pf = pioSource?.plant_family ?? null;
+  const ptc = pioSource?.plant_type_category ?? null;
+  const db = pioSource?.description_brief ?? null;
+  const cv = pioSource?.cultivar_variety ?? null;
+  const ppid = direct_parent_plant_id ?? null;
+  const gsh = pioSource?.growth_structure_habit ?? null;
+  const lc = pioSource?.life_cycle ?? null;
   
   const dataForJsonB: FloraPediaTableRow['data'] = {
     display_image_url: display_image_url, 
@@ -305,7 +295,7 @@ export const addPlant = async (plantData: Omit<Plant, 'id' | 'created_at' | 'upd
 
   const { data: upsertedData, error: upsertError } = await supabase
     .from('flora_pedia')
-    .upsert(rowToUpsert, { onConflict: 'latin_name_scientific_name' }) 
+    .upsert([rowToUpsert], { onConflict: 'latin_name_scientific_name' }) 
     .select()
     .single();
 
@@ -350,25 +340,25 @@ export const updatePlant = async (plantId: string, updates: Partial<Plant>): Pro
   if (fetchError) throw new Error(fetchError.message);
   if (!existingRow) throw new Error(`Plant with ID ${plantId} not found.`);
 
-  const directColumns: (keyof Plant)[] = [
-    'latin_name_scientific_name', 'common_names', 'plant_family',
-    'plant_type_category', 'description_brief', 'cultivar_variety',
-    'parent_plant_id', 'growth_structure_habit', 'life_cycle'
-  ];
+  const directColumns: (keyof Plant)[] = [ 'parent_plant_id' ];
   
   const payload: { [key: string]: any } = {};
   const dataUpdates: { [key: string]: any } = {};
 
+  // Separate updates for direct columns and the JSONB 'data' column
   for (const key in updates) {
     if (Object.prototype.hasOwnProperty.call(updates, key)) {
-      if (directColumns.includes(key as keyof Plant)) {
+      const typedKey = key as keyof Plant;
+      if (directColumns.includes(typedKey)) {
         payload[key] = (updates as any)[key];
       } else {
+        // All other updates go into the data object
         dataUpdates[key] = (updates as any)[key];
       }
     }
   }
 
+  // Handle image upload if a new base64 image is provided
   if (dataUpdates.display_image_url && dataUpdates.display_image_url.startsWith('data:image')) {
     try {
       const imagePath = `plants/${plantId}/${Date.now()}_image.png`;
@@ -379,12 +369,28 @@ export const updatePlant = async (plantId: string, updates: Partial<Plant>): Pro
       }
     } catch (imageError) {
       console.error(`Failed to upload new image for plant ${plantId}. Proceeding with other updates.`, imageError);
+      // Revert to existing image URL if upload fails
       dataUpdates.display_image_url = existingRow.data.display_image_url;
     }
   }
 
+  // If there are updates for the 'data' column, deep merge them
   if (Object.keys(dataUpdates).length > 0) {
+    // CRITICAL FIX: Use deepMerge to prevent data loss in nested JSON
     payload.data = deepMerge(existingRow.data || {}, dataUpdates);
+
+    // After merging, update direct columns from the new data object for consistency
+    const pio = payload.data.plant_identification_overview;
+    if (pio) {
+        payload.latin_name_scientific_name = pio.latin_name_scientific_name;
+        payload.common_names = pio.common_names;
+        payload.plant_family = pio.plant_family;
+        payload.plant_type_category = pio.plant_type_category;
+        payload.description_brief = pio.description_brief;
+        payload.cultivar_variety = pio.cultivar_variety;
+        payload.growth_structure_habit = pio.growth_structure_habit;
+        payload.life_cycle = pio.life_cycle;
+    }
   }
   
   if (Object.keys(payload).length === 0) {
@@ -446,19 +452,28 @@ export const addFertilizer = async (fertilizerInput: FertilizerInput): Promise<F
     data: newFertilizerData,
   };
 
-  const { data, error } = await supabase.from('nutri_base').insert(newFertilizer).select().single();
+  const { data, error } = await supabase.from('nutri_base').insert([newFertilizer]).select().single();
   if (error) throw new Error(error.message);
   return data as Fertilizer;
 };
 
 export const updateFertilizer = async (fertilizerId: string, updates: Partial<Fertilizer>): Promise<Fertilizer> => {
   if (!supabase) throw new Error("Supabase client not initialized.");
-  let finalUpdates = { ...updates };
+  
+  const { data: existingRow, error: fetchError } = await supabase
+    .from('nutri_base')
+    .select('*')
+    .eq('id', fertilizerId)
+    .single();
+
+  if (fetchError) throw new Error(`Fetch fertilizer for update failed: ${fetchError.message}`);
+
+  let payload = { ...updates };
 
   if (updates.data?.imageUrl && updates.data.imageUrl.startsWith('data:image')) {
     const imagePath = `fertilizers/${fertilizerId}/${Date.now()}_image.png`;
     const uploadedUrl = await uploadBase64Image('fertilizer-images', imagePath, updates.data.imageUrl);
-    finalUpdates = produce(finalUpdates, draft => {
+    payload = produce(payload, draft => {
         if (draft.data) {
             draft.data.imageUrl = uploadedUrl;
              if (updates.data?.image_object_position_y === undefined) {
@@ -466,20 +481,15 @@ export const updateFertilizer = async (fertilizerId: string, updates: Partial<Fe
             }
         }
     });
-  } else if (updates.data?.imageUrl === null) {
-     finalUpdates = produce(finalUpdates, draft => {
-        if (draft.data) draft.data.imageUrl = null;
-    });
   }
   
-  if (updates.data && updates.data.image_object_position_y !== undefined && finalUpdates.data) {
-    finalUpdates.data.image_object_position_y = updates.data.image_object_position_y;
+  if (payload.data) {
+    payload.data = deepMerge(existingRow.data || {}, payload.data);
   }
-
 
   const { data, error } = await supabase
     .from('nutri_base')
-    .update(finalUpdates)
+    .update(payload)
     .eq('id', fertilizerId)
     .select()
     .single();
@@ -525,18 +535,28 @@ export const addCompostingMethod = async (methodInput: CompostingMethodInput): P
     scale_of_operation: 'Medium (Home Garden)', 
     data: newMethodData,
   };
-  const { data, error } = await supabase.from('compost_corner').insert(newMethod).select().single();
+  const { data, error } = await supabase.from('compost_corner').insert([newMethod]).select().single();
   if (error) throw new Error(error.message);
   return data as CompostingMethod;
 };
 
 export const updateCompostingMethod = async (methodId: string, updates: Partial<CompostingMethod>): Promise<CompostingMethod> => {
  if (!supabase) throw new Error("Supabase client not initialized.");
- let finalUpdates = { ...updates };
+
+ const { data: existingRow, error: fetchError } = await supabase
+    .from('compost_corner')
+    .select('*')
+    .eq('id', methodId)
+    .single();
+
+ if (fetchError) throw new Error(`Fetch composting method for update failed: ${fetchError.message}`);
+
+ let payload = { ...updates };
+
   if (updates.data?.imageUrl && updates.data.imageUrl.startsWith('data:image')) {
     const imagePath = `composting_methods/${methodId}/${Date.now()}_image.png`;
     const uploadedUrl = await uploadBase64Image('compost-method-images', imagePath, updates.data.imageUrl);
-    finalUpdates = produce(finalUpdates, draft => {
+    payload = produce(payload, draft => {
         if (draft.data) {
             draft.data.imageUrl = uploadedUrl;
             if (updates.data?.image_object_position_y === undefined) {
@@ -544,19 +564,15 @@ export const updateCompostingMethod = async (methodId: string, updates: Partial<
             }
         }
     });
-  } else if (updates.data?.imageUrl === null) {
-     finalUpdates = produce(finalUpdates, draft => {
-        if (draft.data) draft.data.imageUrl = null;
-    });
   }
 
-  if (updates.data && updates.data.image_object_position_y !== undefined && finalUpdates.data) {
-    finalUpdates.data.image_object_position_y = updates.data.image_object_position_y;
+  if (payload.data) {
+    payload.data = deepMerge(existingRow.data || {}, payload.data);
   }
 
   const { data, error } = await supabase
     .from('compost_corner')
-    .update(finalUpdates)
+    .update(payload)
     .eq('id', methodId)
     .select()
     .single();
@@ -569,13 +585,20 @@ export const getGrowingGrounds = async (): Promise<GrowingGround[]> => {
   if (!supabase) return [];
   const { data, error } = await supabase.from('growing_grounds').select('*');
   if (error) throw new Error(error.message);
-  return data.map(row => ({
-    id: row.id,
-    name: row.name,
-    ...row.data, 
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-  })) as GrowingGround[];
+  return data.map(row => {
+    const groundData = row.data || {};
+    return {
+      ...groundData,
+      id: row.id,
+      name: row.name,
+      // Ensure essential arrays are not undefined
+      plants: groundData.plants || [],
+      logs: groundData.logs || [],
+      calendarTasks: groundData.calendarTasks || [],
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    };
+  }) as GrowingGround[];
 };
 
 export const addGrowingGround = async (groundInput: GrowingGroundInput, userId: string): Promise<GrowingGround> => {
@@ -600,7 +623,7 @@ export const addGrowingGround = async (groundInput: GrowingGroundInput, userId: 
   };
   const { data, error } = await supabase
     .from('growing_grounds')
-    .insert({ name: groundInput.name, data: newGroundData, user_id: userId }) 
+    .insert([{ name: groundInput.name, data: newGroundData, user_id: userId }]) 
     .select()
     .single();
     
@@ -615,53 +638,85 @@ export const addGrowingGround = async (groundInput: GrowingGroundInput, userId: 
 };
 
 export const updateGrowingGround = async (groundId: string, updates: Partial<GrowingGround>): Promise<GrowingGround> => {
-  if (!supabase) throw new Error("Supabase client not initialized.");
-  const { data: existingGround, error: fetchError } = await supabase
-    .from('growing_grounds')
-    .select('name, data')
-    .eq('id', groundId)
-    .single();
+    if (!supabase) throw new Error("Supabase client not initialized.");
 
-  if (fetchError) throw new Error(`Fetch existing ground failed: ${fetchError.message}`);
+    const { data: existingRow, error: fetchError } = await supabase
+        .from('growing_grounds')
+        .select('name, data')
+        .eq('id', groundId)
+        .single();
+    if (fetchError) throw new Error(`Fetch ground for update failed: ${fetchError.message}`);
 
-  const { id, name: groundName, created_at, updated_at, ...dataUpdates } = updates;
-  let finalDataUpdates = { ...dataUpdates };
+    const payload: { name?: string; data?: any } = {};
+    const { id, created_at, updated_at, ...restOfUpdates } = updates;
+    const { name, ...dataUpdates } = restOfUpdates as any;
 
-  if (dataUpdates.imageUrl && dataUpdates.imageUrl.startsWith('data:image')) {
+    if (name !== undefined && name !== existingRow.name) {
+        payload.name = name;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id || 'unknown_user';
-    const imagePath = `growing_grounds/${userId}/${groundId}/${Date.now()}_image.png`;
-    const uploadedUrl = await uploadBase64Image('growing-grounds-gallery-images', imagePath, dataUpdates.imageUrl);
-    finalDataUpdates.imageUrl = uploadedUrl;
-    if (dataUpdates.image_object_position_y === undefined) {
-      finalDataUpdates.image_object_position_y = 50;
+
+    if (dataUpdates.imageUrl && typeof dataUpdates.imageUrl === 'string' && dataUpdates.imageUrl.startsWith('data:image')) {
+        const imagePath = `growing_grounds/${userId}/${groundId}/hero_${Date.now()}.png`;
+        dataUpdates.imageUrl = await uploadBase64Image('growing-grounds-gallery-images', imagePath, dataUpdates.imageUrl);
+        if (updates.image_object_position_y === undefined) {
+             dataUpdates.image_object_position_y = 50;
+        }
     }
-  }
 
-  const payload: { name?: string; data?: GrowingGroundData } = {};
-  if (groundName && groundName !== existingGround.name) {
-    payload.name = groundName;
-  }
+    if (dataUpdates.logs && Array.isArray(dataUpdates.logs)) {
+        dataUpdates.logs = await Promise.all(dataUpdates.logs.map(async (log: GroundLogEntry) => {
+            if(log.photoUrls && Array.isArray(log.photoUrls)){
+                const processedUrls = await Promise.all(log.photoUrls.map(async (url, index) => {
+                    if (url.startsWith('data:image')) {
+                        const logId = log.id || Date.now();
+                        const imagePath = `growing_grounds/${userId}/${groundId}/log_${logId}_${index}.png`;
+                        return uploadBase64Image('growing-grounds-gallery-images', imagePath, url);
+                    }
+                    return url;
+                }));
+                return { ...log, photoUrls: processedUrls };
+            }
+            return log;
+        }));
+    }
 
-  const mergedData = deepMerge(existingGround.data || {}, finalDataUpdates);
-  payload.data = mergedData;
+    const finalData = deepMerge(existingRow.data || {}, dataUpdates);
+    payload.data = finalData;
 
-  const { data: updatedData, error: updateError } = await supabase
-    .from('growing_grounds')
-    .update(payload)
-    .eq('id', groundId)
-    .select()
-    .single();
+    if (Object.keys(payload).length === 0) {
+        return {
+            id: groundId,
+            name: existingRow.name,
+            ...existingRow.data,
+            created_at: '', // Satisfy type, not returned from this branch
+            updated_at: '', // Satisfy type, not returned from this branch
+        } as GrowingGround;
+    }
+    
+    const { data: updatedData, error: updateError } = await supabase
+        .from('growing_grounds')
+        .update(payload)
+        .eq('id', groundId)
+        .select()
+        .single();
 
-  if (updateError) throw new Error(`Update ground failed: ${updateError.message}`);
+    if (updateError) throw new Error(`Update ground failed: ${updateError.message}`);
 
-  return {
-    id: updatedData.id,
-    name: updatedData.name,
-    ...updatedData.data,
-    created_at: updatedData.created_at,
-    updated_at: updatedData.updated_at,
-  } as GrowingGround;
+    return {
+        id: updatedData.id,
+        name: updatedData.name,
+        ...updatedData.data,
+    } as GrowingGround;
+};
+
+
+export const deleteGrowingGround = async (groundId: string): Promise<void> => {
+  if (!supabase) throw new Error("Supabase client not initialized.");
+  const { error } = await supabase.from('growing_grounds').delete().eq('id', groundId);
+  if (error) throw new Error(error.message);
 };
 
 
@@ -701,7 +756,7 @@ export const addRecentView = async (
     item_module_id: itemModuleId,
     viewed_at: new Date().toISOString(),
   };
-  const { data, error } = await supabase.from('user_view_history').insert(newView).select().single();
+  const { data, error } = await supabase.from('user_view_history').insert([newView]).select().single();
   if (error) throw new Error(error.message);
   return data as RecentViewItem;
 };
@@ -741,7 +796,7 @@ export const addSeasonalTip = async (tipInput: SeasonalTipInput): Promise<Season
     author_name: tipInput.author_name,
     published_at: new Date().toISOString(), 
   };
-  const { data, error } = await supabase.from('seasonal_tips').insert(newTip).select().single();
+  const { data, error } = await supabase.from('seasonal_tips').insert([newTip]).select().single();
   if (error) throw new Error(error.message);
   return { ...data, images: data.images || [] } as SeasonalTip;
 };
@@ -832,7 +887,7 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
     
     const { error: profileUpdateError } = await supabase
       .from('user_profiles')
-      .upsert({ id: userId, preferences: mergedPreferences }, { onConflict: 'id' });
+      .upsert([{ id: userId, preferences: mergedPreferences }], { onConflict: 'id' });
 
     if (profileUpdateError) throw new Error(`Profile update error: ${profileUpdateError.message}`);
   }
@@ -847,15 +902,29 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
 // --- Seeding ---
 export const seedInitialData = async () => {
   if (!supabase) { console.warn("Supabase not init, skipping seed."); return; }
+
+  const { count, error } = await supabase
+    .from('flora_pedia')
+    .select('*', { count: 'exact', head: true });
+
+  if (error) {
+    console.error("Error checking for existing data, skipping seed:", error.message);
+    return;
+  }
+  
+  if (count !== null && count > 0) {
+    return; // Data exists, do not seed.
+  }
+  
   console.log("Attempting to seed initial data...");
   for (const plantData of INITIAL_PLANTS_DATA_FOR_SEEDING) {
     try {
       await addPlant(plantData as Omit<Plant, 'id' | 'created_at' | 'updated_at'>); 
     } catch (error) {
       if (error instanceof Error && error.message.includes('duplicate key value violates unique constraint')) { 
-        // console.log(`Plant ${plantData.common_names?.[0]} likely already exists, skipping.`);
+        // This is a race condition fallback, but the head check should prevent it.
       } else {
-        console.error(`Error seeding plant ${plantData.common_names?.[0]}:`, error);
+        console.error(`Error seeding plant ${plantData.plant_identification_overview?.common_names?.[0]}:`, error);
       }
     }
   }

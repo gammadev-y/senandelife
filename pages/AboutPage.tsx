@@ -1,10 +1,9 @@
-
 import React from 'react';
 
 const AboutPage: React.FC = () => {
   return (
-    <div className="bg-[#0A1A10] text-white min-h-screen pt-24 md:pt-32">
-      <div className="container mx-auto px-6 lg:px-8">
+    <div className="bg-[#0A1A10] text-white flex-grow">
+      <div className="container mx-auto px-6 lg:px-8 py-12 md:py-16">
         <div className="max-w-4xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-center bg-clip-text text-transparent bg-gradient-to-r from-lime-300 to-green-400 mb-6">
             Our Mission

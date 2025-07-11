@@ -1,6 +1,6 @@
 
 import React, { Suspense, lazy } from 'react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, Outlet } from 'react-router-dom';
 
 // --- IMPORTANT ---
 // This AuthProvider should be the REAL one from your Jarden project,
@@ -28,6 +28,14 @@ const FullscreenLoader: React.FC = () => (
     </div>
 );
 
+// Wrapper component to apply the shared Layout to a group of routes
+const LayoutWrapper: React.FC = () => (
+  <Layout>
+    <Outlet />
+  </Layout>
+);
+
+
 /**
  * This is the main application component for the entire senande.life platform.
  * Its primary responsibilities are:
@@ -41,25 +49,24 @@ const App: React.FC = () => {
     // ensuring consistent authentication state across all modules.
     <AuthProvider>
       <MemoryRouter>
-        {/* The shared Layout provides the consistent Header and Footer */}
-        <Layout>
-          {/* Suspense is required to handle the "waiting" state of lazy-loaded modules */}
-          <Suspense fallback={<FullscreenLoader />}>
-            <Routes>
-              {/* Top-level page routes */}
-              <Route path="/" element={<LandingPage />} />
+        {/* Suspense is required to handle the "waiting" state of lazy-loaded modules */}
+        <Suspense fallback={<FullscreenLoader />}>
+          <Routes>
+            {/* The Landing Page is now standalone to allow for its unique full-page design */}
+            <Route path="/" element={<LandingPage />} />
+
+            {/* Routes that use the shared Layout (e.g., main site pages) */}
+            <Route element={<LayoutWrapper />}>
               <Route path="/about" element={<AboutPage />} />
-
-              {/* Routes to the lazy-loaded modules */}
-              {/* The "/*" wildcard passes control of any sub-paths to the module's internal router */}
               <Route path="/educa/*" element={<EducaModule />} />
-              <Route path="/jarden/*" element={<JardenModule />} />
+            </Route>
 
-              {/* You will add future modules here in the same pattern */}
-              {/* e.g., <Route path="/eunoia/*" element={<EunoiaModule />} /> */}
-            </Routes>
-          </Suspense>
-        </Layout>
+            {/* Jarden module route, which provides its own complete layout */}
+            <Route path="/jarden/*" element={<JardenModule />} />
+
+            {/* You will add future modules here, deciding if they use the shared Layout or not */}
+          </Routes>
+        </Suspense>
       </MemoryRouter>
     </AuthProvider>
   );
