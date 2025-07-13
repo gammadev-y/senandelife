@@ -1,9 +1,5 @@
 
 
-
-
-
-
 import React, { ReactNode, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
@@ -35,14 +31,13 @@ const NavRail: React.FC<{
   onModuleChange: (id: ActiveModuleType | 'home' | 'profile' | 'settings') => void;
   onSignOut: () => void;
 }> = ({ activeModuleId, onModuleChange, onSignOut }) => {
-  const { profile } = useAuth();
+  const { user } = useAuth();
   
   const navModules = useMemo(() => MODULES.filter(m => m.id !== 'home' && m.id !== 'profile'), []);
 
-  const topNavItems = [
-    { id: 'home', name: 'Home', icon: HomeIcon },
-    ...navModules,
-  ];
+  const topNavItems = user 
+    ? [{ id: 'home', name: 'Home', icon: HomeIcon }, ...navModules]
+    : navModules;
   
   const bottomNavItems = [
     { id: 'profile', name: 'Profile', icon: UserCircleIcon },
@@ -76,19 +71,21 @@ const NavRail: React.FC<{
         <ul className="space-y-2">
             {topNavItems.map(renderNavItem)}
         </ul>
-        <ul className="space-y-2">
-            {bottomNavItems.map(renderNavItem)}
-            <li>
-                <button
-                    onClick={onSignOut}
-                    className="flex flex-col items-center justify-center w-full h-16 text-slate-500 dark:text-slate-400 hover:bg-red-100 dark:hover:bg-red-800/50 hover:text-red-600 dark:hover:text-red-400 rounded-2xl transition-all duration-300 ease-in-out"
-                    title="Sign Out"
-                >
-                    <ArrowLeftOnRectangleIcon className="w-6 h-6" />
-                    <span className="text-[10px] font-medium mt-1">Sign Out</span>
-                </button>
-            </li>
-        </ul>
+        {user && (
+            <ul className="space-y-2">
+                {bottomNavItems.map(renderNavItem)}
+                <li>
+                    <button
+                        onClick={onSignOut}
+                        className="flex flex-col items-center justify-center w-full h-16 text-slate-500 dark:text-slate-400 hover:bg-red-100 dark:hover:bg-red-800/50 hover:text-red-600 dark:hover:text-red-400 rounded-2xl transition-all duration-300 ease-in-out"
+                        title="Sign Out"
+                    >
+                        <ArrowLeftOnRectangleIcon className="w-6 h-6" />
+                        <span className="text-[10px] font-medium mt-1">Sign Out</span>
+                    </button>
+                </li>
+            </ul>
+        )}
     </nav>
   );
 };
@@ -97,11 +94,18 @@ const BottomNavBar: React.FC<{
     activeModuleId: ActiveModuleType | 'home' | 'profile' | 'settings';
     onModuleChange: (id: ActiveModuleType | 'home' | 'profile' | 'settings') => void;
 }> = ({ activeModuleId, onModuleChange }) => {
-    const navItems = [
+    const { user } = useAuth();
+
+    const navItems = user ? [
         { id: 'home', name: 'Home', icon: HomeIcon },
         { id: 'florapedia', name: 'Explore', icon: MagnifyingGlassIcon },
         { id: 'growinggrounds', name: 'My Jarden', icon: LeafIcon },
         { id: 'calendar', name: 'Tasks', icon: CalendarDaysIcon },
+    ] : [
+        { id: 'florapedia', name: 'Explore', icon: MagnifyingGlassIcon },
+        { id: 'nutribase', name: 'NutriBase', icon: UserCircleIcon }, // Example public views
+        { id: 'compostcorner', name: 'Compost', icon: CogIcon },
+        { id: 'seasonaltips', name: 'Tips', icon: QuestionMarkCircleIcon },
     ];
 
     return (
@@ -137,8 +141,9 @@ const Header: React.FC<{
     activeModuleId: ActiveModuleType | 'home' | 'profile' | 'settings';
     onGoToProfile: () => void;
     onModuleChange: (id: ActiveModuleType | 'home' | 'profile' | 'settings') => void;
-}> = ({ onAddNew, activeModuleId, onGoToProfile, onModuleChange }) => {
-    const { profile } = useAuth();
+    isCompactView: boolean;
+}> = ({ onAddNew, activeModuleId, onGoToProfile, onModuleChange, isCompactView }) => {
+    const { profile, user } = useAuth();
     const canAddNew = ['florapedia', 'nutribase', 'compostcorner', 'growinggrounds', 'seasonaltips', 'calendar'].includes(activeModuleId);
     const moduleConfig = MODULES.find(m => m.id === activeModuleId) || MODULES.find(m => m.id === 'home')!;
 
@@ -152,12 +157,12 @@ const Header: React.FC<{
                     </span>
                 </Link>
                 <span className="text-slate-400 dark:text-slate-500 hidden sm:block">.</span>
-                <button onClick={() => onModuleChange('home')} className="font-semibold text-lg text-slate-700 dark:text-slate-200 hidden sm:block hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                <button onClick={() => onModuleChange(user ? 'home' : 'florapedia')} className="font-semibold text-lg text-slate-700 dark:text-slate-200 hidden sm:block hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
                     jarden
                 </button>
             </div>
             <div className="flex items-center space-x-3">
-                {canAddNew && (
+                {user && canAddNew && (
                     <button
                         onClick={onAddNew}
                         className={`flex items-center px-4 py-2 text-sm font-medium rounded-full shadow-sm text-white ${moduleConfig.bgColor} ${moduleConfig.hoverBgColor} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-emerald-500 transition-all duration-300 ease-in-out`}
@@ -166,15 +171,14 @@ const Header: React.FC<{
                         {activeModuleId === 'calendar' ? 'Add Event' : 'Add New'}
                     </button>
                 )}
-                <button className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full transition-colors duration-200 ease-in-out">
-                    <BellIcon className="w-6 h-6" />
+                {user && (
+                    <button className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full transition-colors duration-200 ease-in-out">
+                        <BellIcon className="w-6 h-6" />
+                    </button>
+                )}
+                 <button onClick={onGoToProfile} className="block">
+                    <UserAvatar avatarUrl={profile?.avatar_url} size={isCompactView ? "md" : "lg"} />
                 </button>
-                 <button onClick={onGoToProfile} className="block md:hidden">
-                    <UserAvatar avatarUrl={profile?.avatar_url} size="md" />
-                </button>
-                 <button onClick={onGoToProfile} className="hidden md:block">
-                     <UserAvatar avatarUrl={profile?.avatar_url} size="lg" />
-                 </button>
             </div>
         </header>
     );
@@ -238,6 +242,7 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
         weatherLocationPreference, setIsDefineLocationModalOpen, onNavigateToRecentItem
     } = props;
     
+    const { user } = useAuth();
     const moduleConfig = useMemo(() => MODULES.find(m => m.id === activeModuleId) || MODULES.find(m => m.id === 'home')!, [activeModuleId]);
     const isCompactView = window.innerWidth < 1024;
 
@@ -246,7 +251,7 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
             if (activeModuleId === 'florapedia') return plantListItems;
             if (activeModuleId === 'nutribase') return fertilizers;
             if (activeModuleId === 'compostcorner') return compostingMethods;
-            if (activeModuleId === 'growinggrounds') return growingGrounds;
+            if (activeModuleId === 'growinggrounds') return user ? growingGrounds : [];
             if (activeModuleId === 'seasonaltips') return seasonalTipListItems;
             return [];
         }
@@ -259,13 +264,13 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
             case 'compostcorner':
                 return compostingMethods.filter(c => c.method_name.toLowerCase().includes(lowercasedFilter));
             case 'growinggrounds':
-                return growingGrounds.filter(g => g.name.toLowerCase().includes(lowercasedFilter));
+                return user ? growingGrounds.filter(g => g.name.toLowerCase().includes(lowercasedFilter)) : [];
             case 'seasonaltips':
                 return seasonalTipListItems.filter(t => t.title.toLowerCase().includes(lowercasedFilter) || t.description?.toLowerCase().includes(lowercasedFilter));
             default:
                 return [];
         }
-    }, [searchTerm, activeModuleId, plantListItems, fertilizers, compostingMethods, growingGrounds, seasonalTipListItems]);
+    }, [searchTerm, activeModuleId, plantListItems, fertilizers, compostingMethods, growingGrounds, seasonalTipListItems, user]);
 
     const renderListView = () => {
         const gridClasses = "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4 p-3 md:p-4";
@@ -346,7 +351,7 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
         <div className="h-screen w-screen bg-slate-100 dark:bg-slate-900 flex text-slate-900 dark:text-slate-100 font-sans">
             <NavRail activeModuleId={activeModuleId} onModuleChange={onModuleChange} onSignOut={onSignOut} />
             <div className="flex-1 flex flex-col min-w-0">
-                <Header onAddNew={onAddNew} activeModuleId={activeModuleId} onGoToProfile={() => onModuleChange('profile')} onModuleChange={onModuleChange} />
+                <Header onAddNew={onAddNew} activeModuleId={activeModuleId} onGoToProfile={() => onModuleChange('profile')} onModuleChange={onModuleChange} isCompactView={isCompactView} />
                 <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
                     {renderMainContent()}
                 </main>

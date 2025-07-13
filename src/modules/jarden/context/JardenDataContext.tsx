@@ -1,6 +1,7 @@
 
 
 
+
 import React, { createContext, useState, useEffect, useCallback, useMemo, useContext, ReactNode } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
 import {
@@ -67,7 +68,7 @@ export const JardenDataProvider: React.FC<{ children: ReactNode }> = ({ children
                 eventTypesData, calendarEventsData
             ] = await Promise.all([
                 getPlants(), getFertilizers(), getCompostingMethods(),
-                getGrowingGrounds(), getRecentViews(), getSeasonalTips(),
+                getGrowingGrounds(user?.id), getRecentViews(user?.id), getSeasonalTips(),
                 getEventTypes(), getCalendarEvents(user?.id)
             ]);
 
@@ -94,7 +95,7 @@ export const JardenDataProvider: React.FC<{ children: ReactNode }> = ({ children
         refreshAllData(true);
     }, [user?.id, refreshAllData]);
 
-    const value = {
+    const value: JardenDataContextType = {
         plants,
         fertilizers,
         compostingMethods,

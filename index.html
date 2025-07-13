@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,12 +16,19 @@
             fontFamily: {
               sans: ['Manrope', 'sans-serif'],
             },
+            boxShadow: {
+              'glow-hover': '0 0 50px 15px rgba(163, 230, 53, 0.6)',
+            },
             animation: {
               'fade-in-up': 'fade-in-up 1s ease-out forwards',
               'slide-in-right': 'slide-in-right 0.3s ease-out forwards',
-              'fall-and-sway': 'fall-and-sway 15s linear infinite',
-              'drift': 'drift 20s ease-in-out infinite',
+              'wind': 'wind 2s ease-in-out infinite',
+              'slay-1': 'slay-1 3s ease-in-out infinite',
+              'slay-2': 'slay-2 3s ease-in-out 1s infinite',
+              'slay-3': 'slay-3 2s ease-in-out 1s infinite',
               'breathing-glow': 'breathing-glow 4s ease-in-out infinite',
+              'gentle-sway': 'gentle-sway 12s ease-in-out infinite alternate',
+              'breathing-line': 'breathing-line 8s ease-in-out infinite',
             },
             keyframes: {
               'fade-in-up': {
@@ -37,26 +45,42 @@
                 'from': { transform: 'translateX(100%)' },
                 'to': { transform: 'translateX(0)' }
               },
-              'fall-and-sway': {
-                '0%': { transform: 'translateY(-10vh) translateX(0) rotateZ(-10deg)', opacity: '0' },
-                '10%': { opacity: '1' },
-                '100%': { transform: 'translateY(110vh) translateX(5vw) rotateZ(10deg)', opacity: '0' }
+              'gentle-sway': {
+                'from': { transform: 'rotate(-1.5deg) translateX(-2px)' },
+                'to': { transform: 'rotate(1.5deg) translateX(2px)' }
               },
-              'drift': {
-                '0%': { transform: 'translateY(0) scale(0.1)', opacity: '0' },
-                '10%': { opacity: '0.7', transform: 'translateY(-10vh) scale(0.5)' },
-                '90%': { opacity: '0.7', transform: 'translateY(-90vh) scale(1)' },
-                '100%': { transform: 'translateY(-100vh) scale(0.1)', opacity: '0' }
+              'breathing-line': {
+                '0%': { backgroundPosition: '-200% 0' },
+                '100%': { backgroundPosition: '200% 0' },
+              },
+              'wind': {
+                '0%': { backgroundPosition: '0% 50%' },
+                '50%': { backgroundPosition: '100% 50%' },
+                '100%': { backgroundPosition: '0% 50%' },
+              },
+              'slay-1': {
+                '0%': { transform: 'rotate(10deg)' },
+                '50%': { transform: 'rotate(-5deg)' },
+                '100%': { transform: 'rotate(10deg)' },
+              },
+              'slay-2': {
+                '0%': { transform: 'rotate(0deg)' },
+                '50%': { transform: 'rotate(15deg)' },
+                '100%': { transform: 'rotate(0)' },
+              },
+              'slay-3': {
+                '0%': { transform: 'rotate(0deg)' },
+                '50%': { transform: 'rotate(-5deg)' },
+                '100%': { transform: 'rotate(0)' },
               },
               'breathing-glow': {
-                '0%': {
-                    filter: 'drop-shadow(0 0 10px rgba(163, 230, 53, 0.4))'
+                '0%, 100%': {
+                  boxShadow: '0 0 20px 0px rgba(163, 230, 53, 0.3)',
+                  transform: 'scale(1)'
                 },
                 '50%': {
-                    filter: 'drop-shadow(0 0 25px rgba(163, 230, 53, 0.8))'
-                },
-                '100%': {
-                    filter: 'drop-shadow(0 0 10px rgba(163, 230, 53, 0.4))'
+                  boxShadow: '0 0 35px 8px rgba(163, 230, 53, 0.45)',
+                  transform: 'scale(1.05)'
                 }
               },
             }
@@ -67,6 +91,13 @@
     <style>
       body {
         background-color: #02040a; /* Base background for seamless experience */
+      }
+      .smooth-transform {
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
+        will-change: transform, box-shadow;
       }
     </style>
 <script type="importmap">

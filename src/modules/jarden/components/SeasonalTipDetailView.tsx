@@ -1,5 +1,4 @@
 
-
 import React, { useState, useRef, useEffect } from 'react';
 import { SeasonalTip, SeasonalTipContentType, SeasonalTipInput, TipImage } from '../types';
 import { MODULES } from '../constants';
@@ -15,6 +14,7 @@ import { generateSeasonalTipCoverImageWithAi } from '../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import useImageDragAdjust from '../hooks/useImageDragAdjust'; 
+import { useAuth } from '../../../../context/AuthContext';
 
 interface SeasonalTipDetailViewProps {
   tip: SeasonalTip | null;
@@ -30,6 +30,7 @@ const MAX_IMAGES_IN_DETAIL = 8;
 const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
   tip: initialTip, onUpdateTip, setAppError, moduleConfig, onDeselect, isCompactView
 }) => {
+  const { user } = useAuth();
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTipData, setEditedTipData] = useState<SeasonalTipInput | null>(null);
@@ -74,7 +75,8 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
         setShowStockIcon(!initialTip?.images || initialTip.images.length === 0);
         setSelectedImageIndex(0);
     }
-  }, [initialTip, isEditing]);
+    setIsEditing(false);
+  }, [initialTip]);
 
 
   const currentDisplayTip = isEditing && editedTipData 
@@ -189,8 +191,8 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
       <div className="relative">
         <div 
           ref={imageContainerRef} 
-          className={`w-full h-64 md:h-80 relative group/imgcontrol bg-slate-200 dark:bg-slate-700 ${isEditing && heroImageUrl && !showStockIcon ? 'cursor-grab active:cursor-grabbing' : ''}`}
-          {...(isEditing && heroImageUrl && !showStockIcon ? dragHandlers : {})}
+          className={`w-full h-64 md:h-80 relative group/imgcontrol bg-slate-200 dark:bg-slate-700 ${user && isEditing && heroImageUrl && !showStockIcon ? 'cursor-grab active:cursor-grabbing' : ''}`}
+          {...(user && isEditing && heroImageUrl && !showStockIcon ? dragHandlers : {})}
         >
           {!showStockIcon && heroImageUrl && (
             <img
@@ -208,7 +210,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
 
-          {isEditing && heroImageUrl && !showStockIcon && (
+          {user && isEditing && heroImageUrl && !showStockIcon && (
              <div className="absolute top-1/2 -translate-y-1/2 right-4 z-10 flex flex-col space-y-2 opacity-0 group-hover/imgcontrol:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
                 <button onClick={() => handleManualImagePositionChange('up')} title="Move image up" className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-md"><ChevronUpIcon className="w-5 h-5"/></button>
                 <button onClick={() => handleManualImagePositionChange('reset')} title="Reset image position" className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-md"><ArrowPathIcon className="w-5 h-5"/></button>
@@ -217,22 +219,24 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
           )}
         </div>
         
-        <div className="absolute top-4 right-4 z-20">
-          {!isEditing ? (
-            <button onClick={() => setIsEditing(true)} className="p-2.5 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg transition-all" aria-label="Edit tip">
-              <PencilIcon className="w-5 h-5" />
-            </button>
-          ) : (
-            <div className="flex space-x-2">
-              <button onClick={handleSaveChanges} className="p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg transition-all" aria-label="Save changes">
-                <CheckIcon className="w-5 h-5" />
-              </button>
-              <button onClick={handleCancelEdit} className="p-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-all" aria-label="Cancel edit">
-                <XMarkIcon className="w-5 h-5" />
-              </button>
+        {user && (
+            <div className="absolute top-4 right-4 z-20">
+            {!isEditing ? (
+                <button onClick={() => setIsEditing(true)} className="p-2.5 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg transition-all" aria-label="Edit tip">
+                <PencilIcon className="w-5 h-5" />
+                </button>
+            ) : (
+                <div className="flex space-x-2">
+                <button onClick={handleSaveChanges} className="p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg transition-all" aria-label="Save changes">
+                    <CheckIcon className="w-5 h-5" />
+                </button>
+                <button onClick={handleCancelEdit} className="p-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-all" aria-label="Cancel edit">
+                    <XMarkIcon className="w-5 h-5" />
+                </button>
+                </div>
+            )}
             </div>
-          )}
-        </div>
+        )}
 
         <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
           <EditableText 
@@ -241,7 +245,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
             labelText="" 
             textClassName="text-3xl md:text-4xl font-bold text-white shadow-lg" 
             inputFieldClass="text-3xl md:text-4xl font-bold" 
-            disabled={!isEditing} 
+            disabled={!isEditing || !user}
           />
           <EditableText 
             currentValue={currentDisplayTip.description || ''}
@@ -250,7 +254,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
             textarea
             textClassName="text-md text-slate-200 mt-1 line-clamp-2"
             inputFieldClass="text-md"
-            disabled={!isEditing}
+            disabled={!isEditing || !user}
             placeholder="Short summary..."
           />
         </div>
@@ -267,7 +271,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
                             className={`w-full h-full object-cover rounded-lg cursor-pointer transition-all duration-200 ${selectedImageIndex === index ? 'ring-2 ring-offset-2 ring-emerald-500' : 'opacity-70 hover:opacity-100'}`}
                             onClick={() => setSelectedImageIndex(index)}
                         />
-                        {isEditing && (
+                        {user && isEditing && (
                             <button
                                 onClick={() => handleRemoveImage(index)}
                                 className="absolute -top-1.5 -right-1.5 p-1 bg-red-600 text-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
@@ -278,7 +282,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
                         )}
                     </div>
                 ))}
-                {isEditing && (currentDisplayTip.images?.length || 0) < MAX_IMAGES_IN_DETAIL && (
+                {user && isEditing && (currentDisplayTip.images?.length || 0) < MAX_IMAGES_IN_DETAIL && (
                     <div className="flex flex-col gap-2 items-center justify-center aspect-square border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg">
                          <input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageFileChange} className="hidden" id={`tipCoverImageUpload-${currentDisplayTip.id}`} />
                         <button onClick={() => imageInputRef.current?.click()} className="p-2 text-slate-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors" title="Upload Image">
@@ -301,6 +305,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
                         value={editedTipData?.content_type || 'url'}
                         onChange={e => handleSaveField('content_type', e.target.value as SeasonalTipContentType)}
                         className={`w-full p-3 bg-slate-100 dark:bg-slate-700 rounded-lg border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-${moduleConfig.baseColorClass}-500 dark:focus:ring-${moduleConfig.baseColorClass}-400 focus:border-${moduleConfig.baseColorClass}-500 dark:focus:border-${moduleConfig.baseColorClass}-400 text-sm`}
+                        disabled={!user}
                     >
                         <option value="url">External URL</option>
                         <option value="article">Jarden Article</option>
@@ -314,7 +319,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
                 currentValue={currentDisplayTip.source_url || ''} 
                 onSave={val => handleSaveField('source_url', val)} 
                 labelText="Source URL" 
-                disabled={!isEditing}
+                disabled={!isEditing || !user}
                 textSize="text-sm"
                 placeholder="https://example.com/gardening-tip"
               />
@@ -324,7 +329,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
             currentValue={currentDisplayTip.tags?.join(', ') || ''}
             onSave={val => handleSaveField('tags', val.split(',').map(t => t.trim()).filter(t => t))}
             labelText="Tags (comma-separated)"
-            disabled={!isEditing}
+            disabled={!isEditing || !user}
             textSize="text-sm"
             placeholder="e.g., spring, pruning, tomatoes"
           />
@@ -332,7 +337,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
             currentValue={currentDisplayTip.author_name || ''}
             onSave={val => handleSaveField('author_name', val)}
             labelText="Author"
-            disabled={!isEditing}
+            disabled={!isEditing || !user}
             textSize="text-sm"
             placeholder="Jarden Team"
           />
@@ -364,7 +369,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
                 onSave={val => handleSaveField('article_markdown_content', val)}
                 labelText=""
                 textarea
-                disabled={!isEditing}
+                disabled={!isEditing || !user}
                 textSize="text-sm"
                 placeholder="Write your article content here using Markdown..."
                 inputContainerClassName={`bg-slate-100 dark:bg-slate-700/50 rounded-lg focus-within:ring-2 focus-within:ring-${moduleConfig.baseColorClass}-500`}

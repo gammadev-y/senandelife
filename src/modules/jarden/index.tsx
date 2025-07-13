@@ -1,13 +1,6 @@
 
 
-
-
-
-
-
-
-
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import {
     Plant, Fertilizer, CompostingMethod, GrowingGround, ActiveModuleType,
@@ -67,6 +60,19 @@ const JardenModuleContent: React.FC = () => {
     const [customAiModalData, setCustomAiModalData] = useState<CustomAiPromptModalData | null>(null);
     const [contextualGroundId, setContextualGroundId] = useState<string | null>(null);
     const [plantToUpdate, setPlantToUpdate] = useState<any | null>(null);
+
+    const prevUser = useRef(user);
+
+    useEffect(() => {
+        // If user status changes from logged-out to logged-in, redirect to home.
+        if (!prevUser.current && user) {
+            setActiveModuleId('home');
+        } else if (prevUser.current && !user) {
+            // If user logs out, go to a public page
+            setActiveModuleId('florapedia');
+        }
+        prevUser.current = user;
+    }, [user]);
     
     const handleModuleNavigation = (newModuleId: ActiveModuleType | 'home' | 'profile' | 'settings') => {
         if (activeModuleId === newModuleId) {
@@ -112,20 +118,20 @@ const JardenModuleContent: React.FC = () => {
         }
     }, [plants, fertilizers, compostingMethods, growingGrounds, seasonalTips, user]);
     
-    const handleAddItem = async <T, U>(
+    const handleAddItem = async <T, U extends { id: string }>(
         item: T,
         addFn: (data: T, userId?: string) => Promise<U>
-    ): Promise<U | void> => {
+    ): Promise<U> => {
         if (!user) {
             setAppError("You must be logged in to add new items.");
-            return;
+            throw new Error("You must be logged in to add new items.");
         }
         setAppError(null);
         try {
             const newItem = await addFn(item, user?.id);
             await refreshAllData();
             setModalOpen(null);
-            if (newItem && (newItem as any).id) {
+            if (newItem && newItem.id) {
                 let itemTypeString = '';
                 if (activeModuleId === 'florapedia') itemTypeString = 'plant';
                 else if (activeModuleId === 'nutribase') itemTypeString = 'fertilizer';
@@ -134,7 +140,7 @@ const JardenModuleContent: React.FC = () => {
                 else if (activeModuleId === 'seasonaltips') itemTypeString = 'seasonal_tip';
 
                 if (itemTypeString) {
-                    handleItemSelection((newItem as any).id, itemTypeString);
+                    handleItemSelection(newItem.id, itemTypeString);
                 }
             }
             return newItem;
@@ -193,7 +199,7 @@ const JardenModuleContent: React.FC = () => {
     }
 
 
-    const handleAddPlant = (plantInput: PlantInput) => handleAddItem(createDefaultPlantStructureInternal(plantInput) as any, addPlant as any);
+    const handleAddPlant = (plantInput: PlantInput) => handleAddItem(createDefaultPlantStructureInternal(plantInput), addPlant);
     const handleAddFertilizer = (fertilizerInput: FertilizerInput) => handleAddItem(fertilizerInput, addFertilizer);
     const handleAddCompostMethod = (methodInput: CompostingMethodInput) => handleAddItem(methodInput, addCompostingMethod);
     const handleAddGrowingGround = (groundInput: GrowingGroundInput) => handleAddItem(groundInput, addGrowingGround);
@@ -263,24 +269,31 @@ const JardenModuleContent: React.FC = () => {
     const handleAddPlantToGround = async (data: { plantId?: string; newPlantInput?: PlantInput; quantity: number; datePlanted: string; notes?: string; status: PlantStage }) => {
         if (!contextualGroundId) return;
         let plantIdToAdd = data.plantId;
-        if (data.newPlantInput) {
-            await handleAddItem(createDefaultPlantStructureInternal(data.newPlantInput) as any, addPlant as any);
-            const addedPlant = plants.find(p => p.plant_identification_overview.common_names[0] === data.newPlantInput?.common_name);
-            plantIdToAdd = addedPlant?.id;
+    
+        try {
+            if (data.newPlantInput) {
+                const newPlant = await handleAddItem(createDefaultPlantStructureInternal(data.newPlantInput), addPlant);
+                plantIdToAdd = newPlant?.id;
+            }
+            if (!plantIdToAdd) return;
+    
+            setModalOpen(null);
+            const ground = growingGrounds.find(g => g.id === contextualGroundId);
+            if (!ground) return;
+    
+            const newPlantForGround: GrowingGroundPlant = { 
+                plantId: plantIdToAdd, 
+                quantity: data.quantity, 
+                datePlanted: data.datePlanted, 
+                notes: data.notes, 
+                stageLog: [{ stage: data.status, date: data.datePlanted }]
+            };
+            const updatedPlants = [...(ground.plants || []), newPlantForGround];
+            await handleUpdateGrowingGround(contextualGroundId, { ...ground, plants: updatedPlants });
+        } catch (error) {
+            // Error is already set by handleAddItem
+            console.error("Failed to add plant to ground:", error);
         }
-        if (!plantIdToAdd) return;
-        setModalOpen(null);
-        const ground = growingGrounds.find(g => g.id === contextualGroundId);
-        if (!ground) return;
-        const newPlantForGround: GrowingGroundPlant = { 
-            plantId: plantIdToAdd, 
-            quantity: data.quantity, 
-            datePlanted: data.datePlanted, 
-            notes: data.notes, 
-            stageLog: [{ stage: data.status, date: data.datePlanted }]
-        };
-        const updatedPlants = [...(ground.plants || []), newPlantForGround];
-        handleUpdateGrowingGround(contextualGroundId, { ...ground, plants: updatedPlants });
     };
 
     const handleAddLogEntry = async (logEntry: Omit<GroundLogEntry, 'id'>) => {
@@ -290,7 +303,7 @@ const JardenModuleContent: React.FC = () => {
         const newLog = { ...logEntry, id: crypto.randomUUID() };
         const updatedLogs = [newLog, ...(ground.logs || [])];
         setModalOpen(null);
-        handleUpdateGrowingGround(contextualGroundId, { ...ground, logs: updatedLogs });
+        await handleUpdateGrowingGround(contextualGroundId, { ...ground, logs: updatedLogs });
     };
     
     const handleAiGenerateGroundTasks = async (groundId: string) => {
@@ -400,7 +413,7 @@ const JardenModuleContent: React.FC = () => {
     }
 
     if (!user && (activeModuleId === 'growinggrounds' || activeModuleId === 'calendar' || activeModuleId === 'profile' || activeModuleId === 'settings')) {
-        return <AuthPage onLoginSuccess={() => { /* AuthContext handles re-render */ }} />;
+        return <AuthPage onLoginSuccess={() => { /* AuthContext will trigger re-render, and useEffect will handle navigation */ }} />;
     }
 
     return (

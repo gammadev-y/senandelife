@@ -17,9 +17,10 @@ import EditableText from './EditableText';
 import LoadingSpinner from './LoadingSpinner';
 import { getAiAssistedDataForPlantSection, generatePlantImageWithAi } from '../services/geminiService';
 import { convertFileToBase64 } from '../utils/imageUtils';
-import { produce } from 'immer';
+import { produce } from 'https://esm.sh/immer@10.0.3';
 import PlantStockIcon from './icons/PlantStockIcon';
 import { deepMerge, isObject } from '../utils/objectUtils';
+import { useAuth } from '../../../../context/AuthContext';
 
 
 import {
@@ -50,6 +51,8 @@ const DetailSection: React.FC<{
   defaultOpen?: boolean;
 }> = ({ title, children, icon: Icon, isEditing, isLoadingSectionAi, onAiFillSection, sectionKeyForAi, defaultOpen = true }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const { user } = useAuth();
+
   return (
   <div className="bg-white dark:bg-slate-800 shadow-md rounded-2xl"> {/* Changed neutral to slate */}
     <div 
@@ -66,7 +69,7 @@ const DetailSection: React.FC<{
         <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{title}</h3> {/* Changed neutral to slate */}
       </div>
       <div className="flex items-center">
-        {isEditing && sectionKeyForAi && onAiFillSection && (
+        {user && isEditing && sectionKeyForAi && onAiFillSection && (
             <button
             onClick={(e) => { e.stopPropagation(); onAiFillSection(); }} // Stop propagation to prevent toggle
             disabled={isLoadingSectionAi}
@@ -89,10 +92,11 @@ const DetailSection: React.FC<{
 };
 
 const ArrayDisplay: React.FC<{ items: string[] | undefined | null; labelText?: string; path?: string; onSave?: (path:string, value: any) => void; isEditing?: boolean; placeholder?: string }> = ({ items, labelText, path, onSave, isEditing, placeholder="Not specified" }) => {
+    const { user } = useAuth();
     if (!items || items.length === 0) {
-        return <EditableText currentValue="" onSave={(val) => onSave && path && onSave(path, val.split(',').map(s => s.trim()).filter(s => s))} labelText={labelText} disabled={!isEditing} placeholder={placeholder} textSize="text-sm" />;
+        return <EditableText currentValue="" onSave={(val) => onSave && path && onSave(path, val.split(',').map(s => s.trim()).filter(s => s))} labelText={labelText} disabled={!isEditing || !user} placeholder={placeholder} textSize="text-sm" />;
     }
-    if (isEditing && path && onSave) {
+    if (isEditing && path && onSave && user) {
         return <EditableText currentValue={items.join(', ')} onSave={(val) => onSave(path, val.split(',').map(s => s.trim()).filter(s => s))} labelText={labelText} textarea disabled={false} placeholder={placeholder} textSize="text-sm" />;
     }
     return (
@@ -110,6 +114,7 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
   plant, onUpdatePlant, isLoadingAi, setIsLoadingAi, setAppError,
   onOpenCustomAiPromptModal, onPopulateWithStandardAI, moduleConfig, onDeselect, isCompactView
 }) => {
+  const { user } = useAuth();
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedPlantData, setEditedPlantData] = useState<Partial<Plant> | null>(null);
@@ -305,13 +310,13 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
   const heroImageUrl = currentDisplayPlant.display_image_url;
 
   const renderTextRange = (labelText: string, range: TextRange | undefined, path: string) => (
-    <EditableText currentValue={range?.text_range || ''} onSave={val => handleSaveField(`${path}.text_range`, val)} labelText={labelText} disabled={!isEditing} textSize="text-sm" />
+    <EditableText currentValue={range?.text_range || ''} onSave={val => handleSaveField(`${path}.text_range`, val)} labelText={labelText} disabled={!isEditing || !user} textSize="text-sm" />
   );
   const renderToxicityDetail = (labelText: string, detail: ToxicityDetail | undefined, path: string) => (
     <div>
         <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">{labelText}</p> {/* Changed neutral to slate */}
-        <EditableText currentValue={detail?.level || 'Unknown'} onSave={val => handleSaveField(`${path}.level`, val)} labelText="Level" disabled={!isEditing} textSize="text-sm" />
-        <EditableText currentValue={detail?.details || ''} onSave={val => handleSaveField(`${path}.details`, val)} labelText="Details" textarea disabled={!isEditing} textSize="text-sm" />
+        <EditableText currentValue={detail?.level || 'Unknown'} onSave={val => handleSaveField(`${path}.level`, val)} labelText="Level" disabled={!isEditing || !user} textSize="text-sm" />
+        <EditableText currentValue={detail?.details || ''} onSave={val => handleSaveField(`${path}.details`, val)} labelText="Details" textarea disabled={!isEditing || !user} textSize="text-sm" />
     </div>
   );
   const renderKeyValueObject = (obj: Record<string, any> | undefined | null, basePath: string, title?: string) => {
@@ -330,7 +335,7 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
                     currentValue={value !== null && value !== undefined ? String(value) : ''}
                     onSave={val => handleSaveField(`${basePath}.${key}`, val)}
                     labelText={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    disabled={!isEditing}
+                    disabled={!isEditing || !user}
                     textSize="text-sm"
                 />
                 )
@@ -362,7 +367,7 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
 
-          {isEditing && heroImageUrl && !showStockIcon && (
+          {user && isEditing && heroImageUrl && !showStockIcon && (
              <div className="absolute top-1/2 -translate-y-1/2 right-4 z-30 flex flex-col space-y-2 opacity-0 group-hover/imgcontrol:opacity-100 transition-opacity duration-200">
                 <button onClick={() => handleImagePositionChange('up')} title="Move image up" className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-md"><ChevronUpIcon className="w-5 h-5"/></button>
                 <button onClick={() => handleImagePositionChange('reset')} title="Reset image position" className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-md"><ArrowPathIcon className="w-5 h-5"/></button>
@@ -378,24 +383,26 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
           </button>
         )}
 
-        <div className="absolute top-4 right-4 z-20">
-          {!isEditing ? (
-            <button onClick={() => setIsEditing(true)} className="p-2.5 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg transition-all" aria-label="Edit plant details">
-              <PencilIcon className="w-5 h-5" />
-            </button>
-          ) : (
-            <div className="flex space-x-2">
-              <button onClick={handleSaveChanges} className="p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg transition-all" aria-label="Save changes"> {/* Changed to emerald */}
-                <CheckIcon className="w-5 h-5" />
-              </button>
-              <button onClick={handleCancelEdit} className="p-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-all" aria-label="Cancel edit">
-                <XMarkIcon className="w-5 h-5" />
-              </button>
+        {user && (
+            <div className="absolute top-4 right-4 z-20">
+            {!isEditing ? (
+                <button onClick={() => setIsEditing(true)} className="p-2.5 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg transition-all" aria-label="Edit plant details">
+                <PencilIcon className="w-5 h-5" />
+                </button>
+            ) : (
+                <div className="flex space-x-2">
+                <button onClick={handleSaveChanges} className="p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg transition-all" aria-label="Save changes"> {/* Changed to emerald */}
+                    <CheckIcon className="w-5 h-5" />
+                </button>
+                <button onClick={handleCancelEdit} className="p-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-all" aria-label="Cancel edit">
+                    <XMarkIcon className="w-5 h-5" />
+                </button>
+                </div>
+            )}
             </div>
-          )}
-        </div>
+        )}
 
-        {isEditing && (
+        {user && isEditing && (
           <div className="absolute bottom-4 right-4 z-20 flex space-x-2">
             <button
                 onClick={handleAiGenerateImage}
@@ -418,26 +425,26 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
         )}
 
         <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-          <EditableText currentValue={commonName} onSave={val => handleSaveField('plant_identification_overview.common_names.0', val)} labelText="" textClassName="text-3xl md:text-4xl font-bold text-white shadow-lg" inputFieldClass="text-3xl md:text-4xl font-bold" disabled={!isEditing} />
+          <EditableText currentValue={commonName} onSave={val => handleSaveField('plant_identification_overview.common_names.0', val)} labelText="" textClassName="text-3xl md:text-4xl font-bold text-white shadow-lg" inputFieldClass="text-3xl md:text-4xl font-bold" disabled={!isEditing || !user} />
           {idOverview.latin_name_scientific_name && (
-            <EditableText currentValue={idOverview.latin_name_scientific_name} onSave={val => handleSaveField('plant_identification_overview.latin_name_scientific_name', val)} labelText="" textClassName="text-md text-slate-200 italic" inputFieldClass="text-md italic" disabled={!isEditing} /> /* Changed neutral to slate */
+            <EditableText currentValue={idOverview.latin_name_scientific_name} onSave={val => handleSaveField('plant_identification_overview.latin_name_scientific_name', val)} labelText="" textClassName="text-md text-slate-200 italic" inputFieldClass="text-md italic" disabled={!isEditing || !user} /> /* Changed neutral to slate */
           )}
         </div>
       </div>
 
       <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto pb-24">
         <DetailSection title="Identification Overview" icon={BookOpenIcon} isEditing={isEditing} isLoadingSectionAi={isLoadingSectionAi === 'plant_identification_overview'} onAiFillSection={() => handleAiFillSection('plant_identification_overview')} sectionKeyForAi="plant_identification_overview">
-          <EditableText currentValue={idOverview.description_brief} onSave={val => handleSaveField('plant_identification_overview.description_brief', val)} textarea disabled={!isEditing} placeholder="Detailed description..." labelText="Brief Overview" />
+          <EditableText currentValue={idOverview.description_brief} onSave={val => handleSaveField('plant_identification_overview.description_brief', val)} textarea disabled={!isEditing || !user} placeholder="Detailed description..." labelText="Brief Overview" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs mt-3">
-            <EditableText currentValue={idOverview.plant_family} onSave={val => handleSaveField('plant_identification_overview.plant_family', val)} labelText="Family" disabled={!isEditing} textSize="text-sm" />
-            <EditableText currentValue={idOverview.plant_type_category} onSave={val => handleSaveField('plant_identification_overview.plant_type_category', val)} labelText="Type/Category" disabled={!isEditing} textSize="text-sm" />
-            <EditableText currentValue={idOverview.growth_structure_habit} onSave={val => handleSaveField('plant_identification_overview.growth_structure_habit', val)} labelText="Habit" disabled={!isEditing} textSize="text-sm" />
-            <EditableText currentValue={idOverview.life_cycle} onSave={val => handleSaveField('plant_identification_overview.life_cycle', val)} labelText="Life Cycle" disabled={!isEditing} textSize="text-sm" />
+            <EditableText currentValue={idOverview.plant_family} onSave={val => handleSaveField('plant_identification_overview.plant_family', val)} labelText="Family" disabled={!isEditing || !user} textSize="text-sm" />
+            <EditableText currentValue={idOverview.plant_type_category} onSave={val => handleSaveField('plant_identification_overview.plant_type_category', val)} labelText="Type/Category" disabled={!isEditing || !user} textSize="text-sm" />
+            <EditableText currentValue={idOverview.growth_structure_habit} onSave={val => handleSaveField('plant_identification_overview.growth_structure_habit', val)} labelText="Habit" disabled={!isEditing || !user} textSize="text-sm" />
+            <EditableText currentValue={idOverview.life_cycle} onSave={val => handleSaveField('plant_identification_overview.life_cycle', val)} labelText="Life Cycle" disabled={!isEditing || !user} textSize="text-sm" />
             {renderTextRange("Mature Height", idOverview.expected_mature_height_meters, 'plant_identification_overview.expected_mature_height_meters')}
             {renderTextRange("Mature Spread", idOverview.expected_mature_spread_width_meters, 'plant_identification_overview.expected_mature_spread_width_meters')}
-            <EditableText currentValue={idOverview.hardiness_zones?.usda || ''} onSave={val => handleSaveField('plant_identification_overview.hardiness_zones.usda', val)} labelText="Hardiness (USDA)" disabled={!isEditing} textSize="text-sm" />
-            <EditableText currentValue={idOverview.hardiness_zones?.rhs || ''} onSave={val => handleSaveField('plant_identification_overview.hardiness_zones.rhs', val)} labelText="Hardiness (RHS)" disabled={!isEditing} textSize="text-sm" />
-            <EditableText currentValue={idOverview.cultivar_variety || ''} onSave={val => handleSaveField('plant_identification_overview.cultivar_variety', val)} labelText="Cultivar/Variety" disabled={!isEditing} textSize="text-sm" />
+            <EditableText currentValue={idOverview.hardiness_zones?.usda || ''} onSave={val => handleSaveField('plant_identification_overview.hardiness_zones.usda', val)} labelText="Hardiness (USDA)" disabled={!isEditing || !user} textSize="text-sm" />
+            <EditableText currentValue={idOverview.hardiness_zones?.rhs || ''} onSave={val => handleSaveField('plant_identification_overview.hardiness_zones.rhs', val)} labelText="Hardiness (RHS)" disabled={!isEditing || !user} textSize="text-sm" />
+            <EditableText currentValue={idOverview.cultivar_variety || ''} onSave={val => handleSaveField('plant_identification_overview.cultivar_variety', val)} labelText="Cultivar/Variety" disabled={!isEditing || !user} textSize="text-sm" />
             <ArrayDisplay items={idOverview.native_regions} labelText="Native Regions" path="plant_identification_overview.native_regions" onSave={handleSaveField} isEditing={isEditing} />
           </div>
         </DetailSection>
@@ -449,7 +456,7 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
             {renderToxicityDetail("Human Toxicity", keyFeatures.toxicity_information?.human_toxicity, 'key_features_uses_general.toxicity_information.human_toxicity')}
             {renderToxicityDetail("Dog Toxicity", keyFeatures.toxicity_information?.dog_toxicity, 'key_features_uses_general.toxicity_information.dog_toxicity')}
             {renderToxicityDetail("Cat Toxicity", keyFeatures.toxicity_information?.cat_toxicity, 'key_features_uses_general.toxicity_information.cat_toxicity')}
-            <EditableText currentValue={keyFeatures.toxicity_information?.other_animal_toxicity_specify || ''} onSave={val => handleSaveField('key_features_uses_general.toxicity_information.other_animal_toxicity_specify', val)} labelText="Other Animal Toxicity" textarea disabled={!isEditing} textSize="text-sm" />
+            <EditableText currentValue={keyFeatures.toxicity_information?.other_animal_toxicity_specify || ''} onSave={val => handleSaveField('key_features_uses_general.toxicity_information.other_animal_toxicity_specify', val)} labelText="Other Animal Toxicity" textarea disabled={!isEditing || !user} textSize="text-sm" />
         </DetailSection>
 
         <DetailSection title="Cultivation & Growing Conditions" icon={CultivationIcon} isEditing={isEditing} isLoadingSectionAi={isLoadingSectionAi === 'cultivation_growing_conditions'} onAiFillSection={() => handleAiFillSection('cultivation_growing_conditions')} sectionKeyForAi="cultivation_growing_conditions" defaultOpen={false}>
@@ -464,7 +471,7 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
         </DetailSection>
         
         <DetailSection title="Nutrition & Fertilization" icon={BeakerIcon} isEditing={isEditing} isLoadingSectionAi={isLoadingSectionAi === 'plant_nutrition_fertilization_needs'} onAiFillSection={() => handleAiFillSection('plant_nutrition_fertilization_needs')} sectionKeyForAi="plant_nutrition_fertilization_needs" defaultOpen={false}>
-            <EditableText currentValue={nutritionNeeds.general_fertilizer_preferences || ''} onSave={val => handleSaveField('plant_nutrition_fertilization_needs.general_fertilizer_preferences', val)} labelText="General Preferences" disabled={!isEditing} textarea />
+            <EditableText currentValue={nutritionNeeds.general_fertilizer_preferences || ''} onSave={val => handleSaveField('plant_nutrition_fertilization_needs.general_fertilizer_preferences', val)} labelText="General Preferences" disabled={!isEditing || !user} textarea />
             <h4 className="text-sm font-semibold mt-3 mb-1">Phase-Specific Fertilization Needs</h4>
             {nutritionNeeds.phase_specific_fertilization_needs?.length > 0 ? nutritionNeeds.phase_specific_fertilization_needs.map((phase, index) => (
                 <div key={index} className="p-2 border-l-2 border-slate-300 dark:border-slate-600 ml-1 pl-3 mb-2"> {/* Changed neutral to slate */}
@@ -543,7 +550,7 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
         <DetailSection title="Sourcing Information" icon={InformationCircleIcon} isEditing={isEditing} isLoadingSectionAi={false} defaultOpen={false}>
             {sourcingInfo ? (
                 <>
-                    <EditableText currentValue={sourcingInfo.user_notes || ''} onSave={val => handleSaveField('user_sourcing_information.user_notes', val)} labelText="User Notes" textarea disabled={!isEditing} textSize="text-sm" />
+                    <EditableText currentValue={sourcingInfo.user_notes || ''} onSave={val => handleSaveField('user_sourcing_information.user_notes', val)} labelText="User Notes" textarea disabled={!isEditing || !user} textSize="text-sm" />
                     <EditableText currentValue={new Date(sourcingInfo.date_record_created).toLocaleString()} onSave={_ => {}} labelText="Date Created" disabled={true} textSize="text-sm" />
                     <EditableText currentValue={new Date(sourcingInfo.date_record_last_modified).toLocaleString()} onSave={_ => {}} labelText="Last Modified" disabled={true} textSize="text-sm" />
                     <h4 className="text-sm font-semibold mt-3 mb-1">Information Sources</h4>
@@ -559,17 +566,19 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
         </DetailSection>
 
 
-         <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center p-3 items-center">
-              <button onClick={() => onPopulateWithStandardAI(plant.id)} disabled={isLoadingAi || isEditing} title="Populate with AI (Standard)" className={`flex items-center justify-center px-4 py-2 text-sm font-medium bg-sky-100 text-sky-700 dark:bg-sky-700 dark:text-sky-200 rounded-full shadow-sm hover:bg-sky-200 dark:hover:bg-sky-600 transition-colors disabled:opacity-50`}>
-                {isLoadingAi ? <LoadingSpinner size="sm" color="text-sky-600 dark:text-sky-300"/> : <OutlineSparklesIcon className="w-5 h-5 mr-1.5" />} AI Fill All Details
-              </button>
-              <button onClick={() => onOpenCustomAiPromptModal({ plantId: plant.id, plantName: commonName })} disabled={isLoadingAi || isEditing} title="Custom AI Prompt" className={`flex items-center justify-center px-4 py-2 text-sm font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-700 dark:text-indigo-200 rounded-full shadow-sm hover:bg-indigo-200 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50`}>
-                <CommandLineIcon className="w-5 h-5 mr-1.5" /> Custom AI (All)
-              </button>
-               <button onClick={() => setIsJsonModalOpen(true)} disabled={isEditing} title="View Raw Plant Data" className={`flex items-center justify-center px-4 py-2 text-sm font-medium bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded-full shadow-sm hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-50`}> {/* Changed neutral to slate */}
-                <CodeBracketIcon className="w-5 h-5 mr-1.5" /> View Raw Data
-              </button>
-          </div>
+        {user && (
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center p-3 items-center">
+                <button onClick={() => onPopulateWithStandardAI(plant.id)} disabled={isLoadingAi || isEditing} title="Populate with AI (Standard)" className={`flex items-center justify-center px-4 py-2 text-sm font-medium bg-sky-100 text-sky-700 dark:bg-sky-700 dark:text-sky-200 rounded-full shadow-sm hover:bg-sky-200 dark:hover:bg-sky-600 transition-colors disabled:opacity-50`}>
+                    {isLoadingAi ? <LoadingSpinner size="sm" color="text-sky-600 dark:text-sky-300"/> : <OutlineSparklesIcon className="w-5 h-5 mr-1.5" />} AI Fill All Details
+                </button>
+                <button onClick={() => onOpenCustomAiPromptModal({ plantId: plant.id, plantName: commonName })} disabled={isLoadingAi || isEditing} title="Custom AI Prompt" className={`flex items-center justify-center px-4 py-2 text-sm font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-700 dark:text-indigo-200 rounded-full shadow-sm hover:bg-indigo-200 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50`}>
+                    <CommandLineIcon className="w-5 h-5 mr-1.5" /> Custom AI (All)
+                </button>
+                <button onClick={() => setIsJsonModalOpen(true)} disabled={isEditing} title="View Raw Plant Data" className={`flex items-center justify-center px-4 py-2 text-sm font-medium bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded-full shadow-sm hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors disabled:opacity-50`}> {/* Changed neutral to slate */}
+                    <CodeBracketIcon className="w-5 h-5 mr-1.5" /> View Raw Data
+                </button>
+            </div>
+        )}
       </div>
 
       {isJsonModalOpen && (

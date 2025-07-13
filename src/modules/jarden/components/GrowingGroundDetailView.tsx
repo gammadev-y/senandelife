@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { produce } from 'immer';
 import { GrowingGround, Plant, GroundLogEntry, GrowingGroundPlant, PlantStage, CalendarEventViewModel } from '../types';
@@ -22,6 +15,7 @@ import useImageDragAdjust from '../hooks/useImageDragAdjust';
 import { deepMerge } from '../utils/objectUtils';
 import ImageCarousel from './ImageCarousel';
 import UpdatePlantStageModal from './UpdatePlantStageModal';
+import { useAuth } from '../../../../context/AuthContext';
 
 interface GrowingGroundDetailViewProps {
   ground: GrowingGround | null;
@@ -43,13 +37,14 @@ interface GrowingGroundDetailViewProps {
 }
 
 const PlantInGroundCard: React.FC<{ plantInGround: GrowingGroundPlant; allPlants: Plant[]; isEditing: boolean; onRemove: () => void; onUpdateStageClick: (plant: GrowingGroundPlant) => void; }> = ({ plantInGround, allPlants, isEditing, onRemove, onUpdateStageClick }) => {
+    const { user } = useAuth();
     const plantInfo = allPlants.find(p => p.id === plantInGround.plantId);
     if (!plantInfo) return null;
     const currentStage = plantInGround.stageLog?.[plantInGround.stageLog.length - 1]?.stage || 'N/A';
 
     return (
         <div className="bg-slate-100 dark:bg-slate-700/50 rounded-lg p-3 flex items-start space-x-3 group/plant relative">
-            <button onClick={() => onUpdateStageClick(plantInGround)} className="absolute inset-0 z-10" aria-label={`Update stage for ${plantInfo.plant_identification_overview.common_names[0]}`}></button>
+            <button onClick={() => user && onUpdateStageClick(plantInGround)} disabled={!user} className="absolute inset-0 z-10" aria-label={`Update stage for ${plantInfo.plant_identification_overview.common_names[0]}`}></button>
             <img src={plantInfo.display_image_url || undefined} onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden');}}  alt={plantInfo.plant_identification_overview.common_names[0]} className="w-16 h-16 rounded-md object-cover flex-shrink-0" />
             <div className={`w-16 h-16 rounded-md bg-slate-200 dark:bg-slate-600 items-center justify-center flex-shrink-0 hidden`}>
                 <PlantStockIcon className="w-10 h-10 text-slate-400"/>
@@ -59,7 +54,7 @@ const PlantInGroundCard: React.FC<{ plantInGround: GrowingGroundPlant; allPlants
                 <p className="text-xs text-slate-600 dark:text-slate-300">Qty: {plantInGround.quantity} | Stage: <span className="font-medium">{currentStage}</span></p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{plantInGround.notes}</p>
             </div>
-             {isEditing && (
+             {user && isEditing && (
                 <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); onRemove(); }} className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full opacity-0 group-hover/plant:opacity-100 transition-opacity z-20" aria-label={`Remove ${plantInfo.plant_identification_overview.common_names[0]}`}>
                     <TrashIcon className="w-4 h-4"/>
                 </button>
@@ -74,6 +69,7 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
   onOpenAddEventForGround, onAiGenerateGroundTasks, isLoadingAiForGroundTasks,
   onUpdateCalendarEvent, onDeleteCalendarEvent, calendarEvents, moduleConfig, onDeselect, isCompactView
 }) => {
+  const { user } = useAuth();
   const heroImageInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedGroundData, setEditedGroundData] = useState<GrowingGround | null>(null);
@@ -103,7 +99,8 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
     } else {
       setEditedGroundData(null);
     }
-  }, [initialGround, isEditing]);
+    setIsEditing(false);
+  }, [initialGround]);
 
   const handleDataFieldChange = useCallback((path: string, value: any) => {
     if (!isEditing || !editedGroundData) return;
@@ -262,8 +259,8 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
   return (
     <div className="h-full bg-slate-50 dark:bg-slate-900 overflow-y-auto custom-scrollbar">
        <div className="relative">
-            <div ref={heroImageContainerRef} className={`w-full h-64 md:h-80 relative group/imgcontrol bg-slate-200 dark:bg-slate-700 ${isEditing && groundForDisplay.imageUrl ? 'cursor-grab active:cursor-grabbing' : ''}`}
-                 {...(isEditing && groundForDisplay.imageUrl ? dragHandlers : {})}>
+            <div ref={heroImageContainerRef} className={`w-full h-64 md:h-80 relative group/imgcontrol bg-slate-200 dark:bg-slate-700 ${user && isEditing && groundForDisplay.imageUrl ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                 {...(user && isEditing && groundForDisplay.imageUrl ? dragHandlers : {})}>
                  {groundForDisplay.imageUrl ? (
                     <img src={groundForDisplay.imageUrl} alt={groundForDisplay.name} className="w-full h-full object-cover pointer-events-none" style={{ objectPosition: `50% ${currentImageObjectPositionY}%` }} />
                  ) : (
@@ -275,20 +272,22 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
             {isCompactView && !isEditing && (
                 <button type="button" onClick={onDeselect} className="absolute top-4 left-4 p-2 bg-black/40 hover:bg-black/60 text-white rounded-full transition-colors z-10" aria-label="Back to list"><ChevronLeftIcon className="w-6 h-6" /></button>
             )}
-            <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-                {isEditing && <button type="button" onClick={handleDelete} className="p-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg"><TrashIcon className="w-5 h-5" /></button>}
-                {!isEditing ? (<button type="button" onClick={() => setIsEditing(true)} className="p-2.5 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg"><PencilIcon className="w-5 h-5" /></button>) 
-                : (<div className="flex space-x-2"><button type="button" onClick={handleSave} className="p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg"><CheckIcon className="w-5 h-5" /></button><button type="button" onClick={handleCancel} className="p-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg"><XMarkIcon className="w-5 h-5" /></button></div>)}
-            </div>
-            {isEditing && (<div className="absolute bottom-4 right-4 z-20 flex space-x-2">
+            {user && (
+                <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+                    {isEditing && <button type="button" onClick={handleDelete} className="p-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg"><TrashIcon className="w-5 h-5" /></button>}
+                    {!isEditing ? (<button type="button" onClick={() => setIsEditing(true)} className="p-2.5 bg-black/50 hover:bg-black/70 text-white rounded-full shadow-lg"><PencilIcon className="w-5 h-5" /></button>) 
+                    : (<div className="flex space-x-2"><button type="button" onClick={handleSave} className="p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg"><CheckIcon className="w-5 h-5" /></button><button type="button" onClick={handleCancel} className="p-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg"><XMarkIcon className="w-5 h-5" /></button></div>)}
+                </div>
+            )}
+            {user && isEditing && (<div className="absolute bottom-4 right-4 z-20 flex space-x-2">
                 <button type="button" onClick={handleAiGenerateImage} disabled={isLoadingAiImage} className="p-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-full shadow-lg"><OutlineSparklesIcon className="w-5 h-5" /></button>
                 <input type="file" accept="image/*" ref={heroImageInputRef} onChange={handleImageFileChange} className="hidden" />
                 <button type="button" onClick={() => heroImageInputRef.current?.click()} className="p-2.5 bg-black/60 hover:bg-black/80 text-white rounded-full shadow-lg"><PhotoIcon className="w-5 h-5" /></button>
             </div>)}
 
             <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-                <EditableText currentValue={groundForDisplay.name} onSave={val => handleDataFieldChange('name', val)} labelText="" textClassName="text-3xl md:text-4xl font-bold text-white shadow-lg" inputFieldClass="text-3xl md:text-4xl font-bold" disabled={!isEditing} />
-                <EditableText currentValue={groundForDisplay.description} onSave={val => handleDataFieldChange('description', val)} labelText="" textarea textClassName="text-md text-slate-200 mt-1 line-clamp-2" inputFieldClass="text-md" disabled={!isEditing} />
+                <EditableText currentValue={groundForDisplay.name} onSave={val => handleDataFieldChange('name', val)} labelText="" textClassName="text-3xl md:text-4xl font-bold text-white shadow-lg" inputFieldClass="text-3xl md:text-4xl font-bold" disabled={!isEditing || !user} />
+                <EditableText currentValue={groundForDisplay.description} onSave={val => handleDataFieldChange('description', val)} labelText="" textarea textClassName="text-md text-slate-200 mt-1 line-clamp-2" inputFieldClass="text-md" disabled={!isEditing || !user} />
             </div>
         </div>
 
@@ -302,6 +301,7 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
                             value={groundForDisplay.type}
                             onChange={e => handleDataFieldChange('type', e.target.value)}
                             className="w-full p-3 bg-slate-100 dark:bg-slate-700 rounded-lg border-0 focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm"
+                            disabled={!user}
                         >
                             {GROUND_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
                         </select>
@@ -309,26 +309,26 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
                         <p className="text-sm p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg min-h-[2.5em] flex items-center">{groundForDisplay.type}</p>
                     )}
                  </div>
-                <EditableText currentValue={groundForDisplay.areaDimensions || ''} onSave={val => handleDataFieldChange('areaDimensions', val)} labelText={GROWING_GROUND_LABELS.areaDimensions} disabled={!isEditing} textSize="text-sm" />
+                <EditableText currentValue={groundForDisplay.areaDimensions || ''} onSave={val => handleDataFieldChange('areaDimensions', val)} labelText={GROWING_GROUND_LABELS.areaDimensions} disabled={!isEditing || !user} textSize="text-sm" />
             </div>
         </SectionCard>
         
         <SectionCard title="Environment" icon={SunIcon}>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <EditableText currentValue={String(groundForDisplay.lightHoursMorning)} onSave={val => handleDataFieldChange('lightHoursMorning', Number(val))} labelText={GROWING_GROUND_LABELS.lightHoursMorning} disabled={!isEditing} textSize="text-sm" />
-                <EditableText currentValue={String(groundForDisplay.lightHoursAfternoon)} onSave={val => handleDataFieldChange('lightHoursAfternoon', Number(val))} labelText={GROWING_GROUND_LABELS.lightHoursAfternoon} disabled={!isEditing} textSize="text-sm" />
-                <EditableText currentValue={groundForDisplay.soilType} onSave={val => handleDataFieldChange('soilType', val)} labelText={GROWING_GROUND_LABELS.soilType} disabled={!isEditing} textSize="text-sm" />
-                <EditableText currentValue={groundForDisplay.customSoilDescription || ''} onSave={val => handleDataFieldChange('customSoilDescription', val)} labelText={GROWING_GROUND_LABELS.customSoilDescription} textarea disabled={!isEditing} textSize="text-sm" />
+                <EditableText currentValue={String(groundForDisplay.lightHoursMorning)} onSave={val => handleDataFieldChange('lightHoursMorning', Number(val))} labelText={GROWING_GROUND_LABELS.lightHoursMorning} disabled={!isEditing || !user} textSize="text-sm" />
+                <EditableText currentValue={String(groundForDisplay.lightHoursAfternoon)} onSave={val => handleDataFieldChange('lightHoursAfternoon', Number(val))} labelText={GROWING_GROUND_LABELS.lightHoursAfternoon} disabled={!isEditing || !user} textSize="text-sm" />
+                <EditableText currentValue={groundForDisplay.soilType} onSave={val => handleDataFieldChange('soilType', val)} labelText={GROWING_GROUND_LABELS.soilType} disabled={!isEditing || !user} textSize="text-sm" />
+                <EditableText currentValue={groundForDisplay.customSoilDescription || ''} onSave={val => handleDataFieldChange('customSoilDescription', val)} labelText={GROWING_GROUND_LABELS.customSoilDescription} textarea disabled={!isEditing || !user} textSize="text-sm" />
             </div>
         </SectionCard>
         
-        <SectionCard title="Plants in this Ground" icon={SquaresPlusIcon} actionButton={<button type="button" onClick={() => onOpenAddPlantToGroundModal(initialGround.id)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700"><PlusIcon className="w-5 h-5"/></button>}>
+        <SectionCard title="Plants in this Ground" icon={SquaresPlusIcon} actionButton={user && <button type="button" onClick={() => onOpenAddPlantToGroundModal(initialGround.id)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700"><PlusIcon className="w-5 h-5"/></button>}>
             {(groundForDisplay.plants || []).length > 0 ? (
                 <div className="space-y-3">{(groundForDisplay.plants || []).map((p, i) => <PlantInGroundCard key={p.plantId + i} plantInGround={p} allPlants={plants} isEditing={isEditing} onRemove={() => handleRemovePlantFromGround(i)} onUpdateStageClick={() => setPlantToUpdate(p)} />)}</div>
             ) : (<p className="text-slate-500 dark:text-slate-400 text-sm italic">No plants added yet.</p>)}
         </SectionCard>
         
-        <SectionCard title="Calendar Tasks" icon={CalendarDaysIcon} actionButton={
+        <SectionCard title="Calendar Tasks" icon={CalendarDaysIcon} actionButton={ user &&
             <div className="flex items-center space-x-2">
                 <button type="button" onClick={() => onAiGenerateGroundTasks(initialGround.id)} disabled={isLoadingAiForGroundTasks} className={`p-1.5 rounded-full text-sky-500 hover:bg-sky-100 dark:hover:bg-sky-800`}>
                     {isLoadingAiForGroundTasks ? <LoadingSpinner size="sm" color="text-sky-500" /> : <OutlineSparklesIcon className="w-5 h-5"/>}
@@ -341,7 +341,7 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
                     return (
                         <li key={task.id} className="flex items-start p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
                            <div className="flex items-center pt-0.5">
-                                <input type="checkbox" checked={task.is_completed} onChange={(e) => handleTaskCheckboxChange(task.id, e.target.checked)} disabled={isUpdatingThisTask} className="h-4 w-4 rounded border-slate-300 dark:border-slate-500 text-emerald-600 focus:ring-emerald-500 disabled:opacity-50" />
+                                <input type="checkbox" checked={task.is_completed} onChange={(e) => handleTaskCheckboxChange(task.id, e.target.checked)} disabled={isUpdatingThisTask || !user} className="h-4 w-4 rounded border-slate-300 dark:border-slate-500 text-emerald-600 focus:ring-emerald-500 disabled:opacity-50" />
                                 {isUpdatingThisTask 
                                     ? <LoadingSpinner size="sm" color="text-emerald-500" /> 
                                     : <span className="w-5 h-5 ml-3 mr-3 text-lg flex items-center justify-center flex-shrink-0">{task.event_types?.icon_name || '📝'}</span>
@@ -351,7 +351,7 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
                                 <p className={`font-semibold text-sm ${task.is_completed ? 'line-through text-slate-500 dark:text-slate-400' : 'text-slate-800 dark:text-slate-100'}`}>{task.title}</p>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{new Date(task.start_date).toLocaleDateString()}</p>
                             </div>
-                            {isEditing && <button type="button" onClick={() => onDeleteCalendarEvent(task.id)} className="p-1 text-red-500 hover:bg-red-100 rounded-full"><TrashIcon className="w-4 h-4" /></button>}
+                            {user && isEditing && <button type="button" onClick={() => onDeleteCalendarEvent(task.id)} className="p-1 text-red-500 hover:bg-red-100 rounded-full"><TrashIcon className="w-4 h-4" /></button>}
                         </li>
                     );
                 }) : <p className="text-slate-500 dark:text-slate-400 text-sm italic">No pending tasks.</p>}
@@ -366,7 +366,7 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
                         <ul className="space-y-3 mt-2 max-h-60 overflow-y-auto custom-scrollbar pr-2 border-t border-slate-200 dark:border-slate-700 pt-3">
                             {completedTasks.map(task => (
                                 <li key={task.id} className="flex items-start p-2 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg opacity-70">
-                                    <input type="checkbox" checked={true} onChange={(e) => handleTaskCheckboxChange(task.id, e.target.checked)} className="h-4 w-4 rounded border-slate-300 dark:border-slate-500 text-emerald-600 focus:ring-emerald-500 mt-0.5" />
+                                    <input type="checkbox" checked={true} onChange={(e) => user && handleTaskCheckboxChange(task.id, e.target.checked)} disabled={!user} className="h-4 w-4 rounded border-slate-300 dark:border-slate-500 text-emerald-600 focus:ring-emerald-500 mt-0.5" />
                                     <div className="ml-3 flex-grow">
                                         <p className="font-medium text-sm line-through text-slate-500 dark:text-slate-400">{task.title}</p>
                                         <p className="text-xs text-slate-400 dark:text-slate-500">Completed: {new Date(task.start_date).toLocaleDateString()}</p>
@@ -379,7 +379,7 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
              )}
         </SectionCard>
         
-        <SectionCard title="Activity Log" icon={ChartBarIcon} actionButton={<button type="button" onClick={() => onOpenAddLogEntryModal(initialGround.id)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700"><PlusIcon className="w-5 h-5"/></button>}>
+        <SectionCard title="Activity Log" icon={ChartBarIcon} actionButton={user && <button type="button" onClick={() => onOpenAddLogEntryModal(initialGround.id)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700"><PlusIcon className="w-5 h-5"/></button>}>
             <ul className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar pr-2">
                 {sortedLogs.length > 0 ? sortedLogs.map(log => {
                     const LogIcon = GROUND_LOG_ACTION_TYPE_ICONS[log.actionType] || TagIcon;
@@ -404,8 +404,8 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
         )}
         
         <SectionCard title="Notes & Sources" icon={ChatBubbleBottomCenterTextIcon}>
-            <EditableText currentValue={groundForDisplay.customNotes || ''} onSave={val => handleDataFieldChange('customNotes', val)} labelText="Custom Notes" textarea disabled={!isEditing} textSize="text-sm" />
-            <EditableText currentValue={groundForDisplay.informationSources || ''} onSave={val => handleDataFieldChange('informationSources', val)} labelText="Information Sources" textarea disabled={!isEditing} textSize="text-sm" />
+            <EditableText currentValue={groundForDisplay.customNotes || ''} onSave={val => handleDataFieldChange('customNotes', val)} labelText="Custom Notes" textarea disabled={!isEditing || !user} textSize="text-sm" />
+            <EditableText currentValue={groundForDisplay.informationSources || ''} onSave={val => handleDataFieldChange('informationSources', val)} labelText="Information Sources" textarea disabled={!isEditing || !user} textSize="text-sm" />
         </SectionCard>
       </div>
 

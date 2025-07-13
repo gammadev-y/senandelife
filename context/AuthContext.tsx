@@ -1,14 +1,15 @@
 
+
 import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback, useMemo } from 'react';
-import type { AuthSession, User } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
 import { UserProfile, WeatherLocationPreference } from '../src/modules/jarden/types';
-import { getUserProfile as getUserProfileFromSupabase, updateUserProfile as updateSupabaseUserProfile } from '../src/modules/jarden/services/supabaseService';
+import { getUserProfile, updateUserProfile } from '../src/modules/jarden/services/supabaseService';
 import { LOCAL_STORAGE_WEATHER_PREF_KEY } from '../src/modules/jarden/constants';
 
 
 interface AuthContextType {
-  session: AuthSession | null;
+  session: Session | null;
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
@@ -24,44 +25,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<AuthSession | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const fetchAndSetProfile = useCallback(async (userId: string) => {
-    try {
-      if (!supabase) {
-        throw new Error("Supabase client is not available.");
-      }
-      const userProfile = await getUserProfileFromSupabase(userId);
-      setProfile(userProfile);
-      // Apply theme from fetched profile
-      const theme = userProfile?.preferences?.theme || 'system';
-      document.documentElement.classList.remove('dark', 'light'); // Clear previous
-      if (theme === 'dark') document.documentElement.classList.add('dark');
-      else if (theme === 'light') document.documentElement.classList.add('light');
-      else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');
-
-      // Sync local weather preference if profile has none and local exists
-      if (userProfile && !userProfile.preferences?.weather) {
-        const localWeatherPrefString = localStorage.getItem(LOCAL_STORAGE_WEATHER_PREF_KEY);
-        if (localWeatherPrefString) {
-            try {
-                const localWeatherPref = JSON.parse(localWeatherPrefString) as WeatherLocationPreference;
-                const updatedPrefs = { ...userProfile.preferences, weather: localWeatherPref };
-                await updateSupabaseUserProfile(userId, { preferences: updatedPrefs });
-                setProfile(prev => prev ? ({ ...prev, preferences: updatedPrefs }) : null);
-            } catch (e) { console.error("Error syncing local weather pref to profile:", e); }
-        }
-      }
-
-
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      setProfile(null);
-    }
-  }, []);
 
   useEffect(() => {
     if (!supabase) {
@@ -69,28 +36,64 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoading(false);
         return;
     }
-    setLoading(true);
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchAndSetProfile(session.user.id);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        
+        if (currentUser) {
+          try {
+            let userProfile = await getUserProfile(currentUser.id);
+            
+            // Sync local weather preference if profile has none and local exists
+            if (userProfile && !userProfile.preferences?.weather) {
+              const localWeatherPrefString = localStorage.getItem(LOCAL_STORAGE_WEATHER_PREF_KEY);
+              if (localWeatherPrefString) {
+                  try {
+                      const localWeatherPref = JSON.parse(localWeatherPrefString) as WeatherLocationPreference;
+                      const updatedPrefs = { ...userProfile.preferences, weather: localWeatherPref };
+                      // Update the profile in the DB and use the returned value for this session
+                      userProfile = await updateUserProfile(currentUser.id, { preferences: updatedPrefs });
+                  } catch (e) { 
+                      console.error("Error syncing local weather pref to profile:", e); 
+                  }
+              }
+            }
+            
+            setProfile(userProfile);
+
+            // Apply theme from profile
+            const theme = userProfile?.preferences?.theme || 'system';
+            document.documentElement.classList.remove('dark', 'light');
+            if (theme === 'dark') {
+              document.documentElement.classList.add('dark');
+            } else if (theme === 'light') {
+              document.documentElement.classList.add('light');
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              document.documentElement.classList.add('dark');
+            }
+          } catch (error) {
+            console.error('Error handling auth state change:', error);
+            setProfile(null);
+          }
         } else {
-          setProfile(null); 
-          document.documentElement.classList.remove('dark', 'light');
-           if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-             document.documentElement.classList.add('dark');
-           }
+            setProfile(null); 
+            document.documentElement.classList.remove('dark', 'light');
+             if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+               document.documentElement.classList.add('dark');
+             }
         }
         setLoading(false);
       }
     );
 
     return () => {
+      // Use the v2 pattern, as the `data` object contains the subscription
       authListener?.subscription.unsubscribe();
     };
-  }, [fetchAndSetProfile]);
+  }, []); // Empty dependency array ensures this runs only once.
 
   const signInWithGoogle = useCallback(async () => {
     if (!supabase) throw new Error("Supabase client not available.");
@@ -139,7 +142,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateProfileData = useCallback(async (updates: Partial<Pick<UserProfile, 'full_name' | 'avatar_url' | 'preferences'>>) => {
     if (!user) throw new Error("User not authenticated.");
     try {
-        const updatedProfile = await updateSupabaseUserProfile(user.id, updates);
+        const updatedProfile = await updateUserProfile(user.id, updates);
         setProfile(updatedProfile); // Also update local state immediately for responsiveness
         return updatedProfile;
     } catch (error) {
@@ -148,14 +151,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [user]);
 
-
   const value = useMemo(() => ({
     session, user, profile, loading, setProfile,
     signInWithGoogle, signInWithEmail, signUpWithEmail, signOut,
     updateUserPassword, updateProfileData,
-  }), [session, user, profile, loading, setProfile, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, updateUserPassword, updateProfileData]);
+  }), [session, user, profile, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, updateUserPassword, updateProfileData]);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {

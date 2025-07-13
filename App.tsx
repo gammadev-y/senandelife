@@ -1,6 +1,6 @@
 
-import React, { Suspense} from 'react';
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { MemoryRouter, Routes, Route, Outlet } from 'react-router-dom';
 
 // --- IMPORTANT ---
 // This AuthProvider should be the REAL one from your Jarden project,
@@ -48,7 +48,7 @@ const App: React.FC = () => {
     // The single, global AuthProvider wraps the entire application,
     // ensuring consistent authentication state across all modules.
     <AuthProvider>
-      <BrowserRouter>
+      <MemoryRouter>
         {/* Suspense is required to handle the "waiting" state of lazy-loaded modules */}
         <Suspense fallback={<FullscreenLoader />}>
           <Routes>
@@ -67,7 +67,7 @@ const App: React.FC = () => {
             {/* You will add future modules here, deciding if they use the shared Layout or not */}
           </Routes>
         </Suspense>
-      </BrowserRouter>
+      </MemoryRouter>
     </AuthProvider>
   );
 };
