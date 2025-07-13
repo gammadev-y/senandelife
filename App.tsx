@@ -1,5 +1,5 @@
 
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense} from 'react';
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 
 // --- IMPORTANT ---
