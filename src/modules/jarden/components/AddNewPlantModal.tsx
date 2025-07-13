@@ -4,11 +4,12 @@ import { PlantInput } from '../types';
 import { XMarkIcon, PhotoIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { convertFileToBase64 } from '../utils/imageUtils';
 import { MODULES } from '../constants'; 
+import LoadingSpinner from './LoadingSpinner';
 
 interface AddNewPlantModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (plantInput: PlantInput) => void;
+  onSave: (plantInput: PlantInput) => Promise<any>;
   moduleConfig: typeof MODULES[0];
 }
 
@@ -19,6 +20,7 @@ const AddNewPlantModal: React.FC<AddNewPlantModalProps> = ({ isOpen, onClose, on
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!isOpen) return null;
 
@@ -43,26 +45,40 @@ const AddNewPlantModal: React.FC<AddNewPlantModalProps> = ({ isOpen, onClose, on
     setFamily('');
     setImageBase64(null);
     setError(null);
+    setIsSaving(false);
     if(fileInputRef.current) {
         fileInputRef.current.value = ''; 
     }
   };
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!commonName.trim()) {
       setError("Plant common name is required.");
       return;
     }
     setError(null);
-    onSave({
-      common_name: commonName.trim(),
-      scientific_name: scientificName.trim() || undefined,
-      family: family.trim() || undefined,
-      display_image_url: imageBase64 || undefined, 
-    });
-    clearForm();
+    setIsSaving(true);
+    try {
+      await onSave({
+        common_name: commonName.trim(),
+        scientific_name: scientificName.trim() || undefined,
+        family: family.trim() || undefined,
+        display_image_url: imageBase64 || undefined, 
+      });
+      // On success, the parent component closes the modal.
+      clearForm();
+    } catch (err) {
+        setError(err instanceof Error ? err.message : "An unknown error occurred while saving.");
+    } finally {
+        setIsSaving(false);
+    }
   };
   
+  const handleClose = () => {
+    clearForm();
+    onClose();
+  };
+
   const inputBaseClass = "w-full px-3 py-2.5 border-0 border-b-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none sm:text-sm transition-colors";
   const inputFocusClass = `focus:border-${moduleConfig.baseColorClass}-500 dark:focus:border-${moduleConfig.baseColorClass}-400 focus:ring-0 focus:bg-slate-50 dark:focus:bg-slate-600/50`;
   const inputErrorClass = "border-red-500 dark:border-red-400";
@@ -73,7 +89,7 @@ const AddNewPlantModal: React.FC<AddNewPlantModalProps> = ({ isOpen, onClose, on
         <div className="flex justify-between items-center mb-5">
           <h2 className="text-xl font-medium text-slate-800 dark:text-slate-100">Add New Plant</h2>
           <button
-            onClick={() => { clearForm(); onClose(); }}
+            onClick={handleClose}
             className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors duration-200 ease-in-out"
             aria-label="Close modal"
           >
@@ -169,17 +185,19 @@ const AddNewPlantModal: React.FC<AddNewPlantModalProps> = ({ isOpen, onClose, on
         <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-700">
           <button
             type="button"
-            onClick={() => { clearForm(); onClose(); }}
-            className={`px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400 transition-all duration-200 ease-in-out`}
+            onClick={handleClose}
+            disabled={isSaving}
+            className={`px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400 transition-all duration-200 ease-in-out disabled:opacity-70`}
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className={`px-6 py-2 text-sm font-medium text-white bg-${moduleConfig.baseColorClass}-600 hover:bg-${moduleConfig.baseColorClass}-700 dark:bg-${moduleConfig.baseColorClass}-500 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 focus:ring-${moduleConfig.baseColorClass}-500 transition-all duration-200 ease-in-out`}
+            disabled={isSaving}
+            className={`min-w-[120px] px-6 py-2 text-sm font-medium text-white bg-${moduleConfig.baseColorClass}-600 hover:bg-${moduleConfig.baseColorClass}-700 dark:bg-${moduleConfig.baseColorClass}-500 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 focus:ring-${moduleConfig.baseColorClass}-500 transition-all duration-200 ease-in-out disabled:opacity-70 flex items-center justify-center`}
           >
-            Save Plant
+            {isSaving ? <LoadingSpinner size="sm" color="text-white" /> : 'Save Plant'}
           </button>
         </div>
       </div>

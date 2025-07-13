@@ -1,15 +1,20 @@
 
+
+
+
 import React, { useState, useMemo, useEffect } from 'react';
-import { CalendarEvent, GroundLogActionType, WeatherLocationPreference } from '../types'; 
-import { MONTH_ABBREVIATIONS, GROUND_LOG_ACTION_TYPE_ICONS, MODULES } from '../constants';
-import { ChevronLeftIcon, ChevronRightIcon, InformationCircleIcon, CheckCircleIcon as SolidCheckCircleIcon, ClockIcon, XMarkIcon, ClipboardDocumentListIcon, ListBulletIcon } from '@heroicons/react/24/outline';
+import { CalendarEventViewModel, WeatherLocationPreference } from '../types'; 
+import { MONTH_ABBREVIATIONS, MODULES } from '../constants';
+import { ChevronLeftIcon, ChevronRightIcon, ClockIcon, XMarkIcon, TagIcon } from '@heroicons/react/24/outline';
 import WeatherBanner from './WeatherBanner'; 
+import LoadingSpinner from './LoadingSpinner';
 
 interface CalendarViewProps {
-  events: CalendarEvent[];
+  calendarEvents: CalendarEventViewModel[];
   moduleConfig: typeof MODULES[0]; 
   weatherLocationPreference: WeatherLocationPreference | null; 
-  setIsDefineLocationModalOpen: (isOpen: boolean) => void; 
+  setIsDefineLocationModalOpen: (isOpen: boolean) => void;
+  onUpdateCalendarEvent: (eventId: string, updates: Partial<CalendarEventViewModel>) => void;
 }
 
 interface DayCell {
@@ -17,13 +22,14 @@ interface DayCell {
   dayOfMonth: number;
   isCurrentMonth: boolean;
   isToday: boolean;
-  events: CalendarEvent[];
+  events: CalendarEventViewModel[];
 }
 
-const CalendarView: React.FC<CalendarViewProps> = ({ events, moduleConfig, weatherLocationPreference, setIsDefineLocationModalOpen }) => {
+const CalendarView: React.FC<CalendarViewProps> = ({ calendarEvents, moduleConfig, weatherLocationPreference, setIsDefineLocationModalOpen, onUpdateCalendarEvent }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDateForModal, setSelectedDateForModal] = useState<Date | null>(null);
   const [isTaskDetailModalOpen, setIsTaskDetailModalOpen] = useState(false);
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0); 
@@ -43,7 +49,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, moduleConfig, weath
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const firstDayOfMonth = new Date(year, month, 1);
-    const lastDayOfMonth = new Date(year, month + 1, 0);
     
     const grid: DayCell[] = [];
     const startDate = new Date(firstDayOfMonth);
@@ -54,8 +59,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, moduleConfig, weath
       day.setDate(startDate.getDate() + i);
       day.setHours(0,0,0,0);
 
-      const dayEvents = events.filter(event => {
-        const eventDate = new Date(event.date + 'T00:00:00'); 
+      const dayEvents = calendarEvents.filter(event => {
+        const eventDate = new Date(event.start_date); 
         eventDate.setHours(0,0,0,0);
         return eventDate.getTime() === day.getTime();
       });
@@ -69,31 +74,15 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, moduleConfig, weath
       });
     }
     return grid;
-  }, [currentDate, events, today]);
+  }, [currentDate, calendarEvents, today]);
 
   const todaysTasks = useMemo(() => {
-    return events.filter(event => {
-      const eventDate = new Date(event.date + 'T00:00:00');
+    return calendarEvents.filter(event => {
+      const eventDate = new Date(event.start_date);
       eventDate.setHours(0,0,0,0);
-      return eventDate.getTime() === today.getTime() && !event.isCompleted; // Show only pending tasks for today
+      return eventDate.getTime() === today.getTime() && event.status !== 'Completed';
     }).sort((a, b) => a.title.localeCompare(b.title));
-  }, [events, today]);
-
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  const endOfWeek = new Date(today);
-  endOfWeek.setDate(today.getDate() + 6);
-
-  const restOfWeekTasks = events.filter(event => {
-    const eventDate = new Date(event.date + 'T00:00:00');
-    eventDate.setHours(0,0,0,0);
-    return eventDate >= tomorrow && eventDate <= endOfWeek && !event.isCompleted;
-  }).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime() || a.title.localeCompare(b.title));
-
-
-  const getTaskIcon = (event: CalendarEvent): React.FC<React.SVGProps<SVGSVGElement>> => {
-    return GROUND_LOG_ACTION_TYPE_ICONS[event.taskType] || InformationCircleIcon;
-  };
+  }, [calendarEvents, today]);
 
   const handleDayClick = (day: DayCell) => {
     if (day.events.length > 0) {
@@ -106,28 +95,53 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, moduleConfig, weath
     setIsTaskDetailModalOpen(false);
     setSelectedDateForModal(null);
   };
+  
+  const handleTaskCheckboxChange = async (taskId: string, isCompleted: boolean) => {
+    setUpdatingTaskId(taskId);
+    try {
+      await onUpdateCalendarEvent(taskId, { is_completed: isCompleted });
+    } catch (error) {
+      console.error("Failed to update task status", error);
+    } finally {
+      setUpdatingTaskId(null);
+    }
+  };
 
-  const renderTaskItem = (event: CalendarEvent, isModal: boolean = false) => {
-    const EventIcon = getTaskIcon(event);
-    const itemColor = event.color.startsWith('bg-') ? event.color.split('-')[1] : 'gray';
-    const textColorClass = `text-${itemColor}-700 dark:text-${itemColor}-300`;
-    const iconColorClass = `text-${itemColor}-600 dark:text-${itemColor}-400`;
-    
+  const renderTaskItem = (event: CalendarEventViewModel, isModal: boolean = false) => {
+    const colorHex = event.event_types?.color_code || '#6b7280';
+    const isCompleted = event.status === 'Completed';
+    const isUpdatingThisTask = updatingTaskId === event.id;
+
     return (
-      <li key={event.id} className={`p-3 rounded-lg ${isModal ? 'bg-slate-100 dark:bg-slate-700/70' : 'bg-white dark:bg-slate-800 shadow-sm'} transition-all`}>
+      <li key={event.id} className={`p-3 rounded-lg ${isModal ? 'bg-slate-100 dark:bg-slate-700/70' : 'bg-white dark:bg-slate-800 shadow-sm'} transition-all`} style={{borderLeft: `4px solid ${colorHex}`}}>
         <div className="flex items-start justify-between">
-          <div className="flex items-start">
-            <EventIcon className={`w-5 h-5 mr-2.5 mt-0.5 flex-shrink-0 ${event.isCompleted ? 'text-slate-400 dark:text-slate-500' : iconColorClass}`} />
+          <div className="flex items-start flex-grow">
+            {isModal && (
+                <div className="flex items-center h-full pt-0.5 mr-2.5">
+                    {isUpdatingThisTask ? (
+                        <LoadingSpinner size="sm" color="text-emerald-500" />
+                    ) : (
+                        <input
+                            type="checkbox"
+                            checked={isCompleted}
+                            onChange={(e) => handleTaskCheckboxChange(event.id, e.target.checked)}
+                            className="h-4 w-4 rounded border-slate-300 dark:border-slate-500 text-emerald-600 focus:ring-emerald-500"
+                            aria-label={`Mark ${event.title} as ${isCompleted ? 'not completed' : 'completed'}`}
+                        />
+                    )}
+                </div>
+            )}
+            <span className="w-5 h-5 mr-2.5 mt-0.5 text-lg flex items-center justify-center flex-shrink-0">{event.event_types?.icon_name || '📝'}</span>
             <div className="flex-grow">
-              <h3 className={`font-medium text-sm ${event.isCompleted ? 'line-through text-slate-500 dark:text-slate-400' : textColorClass}`}>{event.title}</h3>
-              {isModal && event.description && <p className={`text-xs mt-0.5 ${event.isCompleted ? 'text-slate-400 dark:text-slate-500' : 'text-slate-600 dark:text-slate-300'} whitespace-pre-wrap break-words`}>{event.description}</p>}
+              <h3 className={`font-medium text-sm ${isCompleted ? 'line-through text-slate-500 dark:text-slate-400' : 'text-slate-800 dark:text-slate-100'}`}>{event.title}</h3>
+              {isModal && event.description && <p className={`text-xs mt-0.5 ${isCompleted ? 'text-slate-400 dark:text-slate-500' : 'text-slate-600 dark:text-slate-300'} whitespace-pre-wrap break-words`}>{event.description}</p>}
             </div>
           </div>
-          {isModal && <span className={`text-xs font-medium whitespace-nowrap ml-2 ${event.isCompleted ? 'text-slate-400 dark:text-slate-500' : 'text-slate-500 dark:text-slate-400'}`}>{new Date(event.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>}
+          {isModal && <span className={`text-xs font-medium whitespace-nowrap ml-2 ${isCompleted ? 'text-slate-400 dark:text-slate-500' : 'text-slate-500 dark:text-slate-400'}`}>{new Date(event.start_date).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric' })}</span>}
         </div>
-        <div className="text-xs text-slate-400 dark:text-slate-500 mt-1 ml-7.5">
-          Source: {event.sourceName} ({event.sourceModule})
-          {event.sourceModule === 'Ground' && event.status && <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${event.status === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200' : (event.status === 'Overdue' ? `bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200` : `bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-200`)}`}>{event.status}</span>}
+        <div className={`text-xs text-slate-400 dark:text-slate-500 mt-1 ${isModal ? 'ml-[46px]' : 'ml-[29px]'}`}>
+          Type: {event.event_types?.name || 'General'}
+          {event.status && <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${isCompleted ? 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200' : (event.status === 'Overdue' ? `bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200` : `bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-200`)}`}>{event.status}</span>}
         </div>
       </li>
     );
@@ -186,13 +200,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({ events, moduleConfig, weath
             {day.events.length > 0 && (
               <div className="mt-1 space-y-0.5 overflow-y-auto max-h-[60px] md:max-h-[80px] custom-scrollbar-xs">
                 {day.events.slice(0, 2).map(event => {
-                  const EventIcon = getTaskIcon(event);
-                  const itemColor = event.color.startsWith('bg-') ? event.color.split('-')[1] : 'gray';
-                  const iconColorClass = event.isCompleted ? 'text-slate-400 dark:text-slate-500' : `text-${itemColor}-500 dark:text-${itemColor}-400`;
+                  const isCompleted = event.status === 'Completed';
+                  const colorHex = event.event_types?.color_code || '#6b7280';
                   return (
-                    <div key={event.id} className={`flex items-center p-0.5 md:p-1 rounded-md text-xs truncate ${event.isCompleted ? 'bg-slate-100 dark:bg-slate-700/50 opacity-60' : `${event.color.replace('bg-','bg-opacity-20 dark:bg-opacity-30')} bg-opacity-20 dark:bg-opacity-30`}`}>
-                      <EventIcon className={`w-3 h-3 mr-1 flex-shrink-0 ${iconColorClass}`} />
-                      <span className={`truncate ${event.isCompleted ? 'line-through text-slate-500 dark:text-slate-400' : `text-${itemColor}-700 dark:text-${itemColor}-300`}`}>
+                    <div key={event.id} className={`flex items-center p-0.5 md:p-1 rounded-md text-xs truncate ${isCompleted ? 'bg-slate-100 dark:bg-slate-700/50 opacity-60' : 'bg-opacity-20 dark:bg-opacity-30'}`} style={{ backgroundColor: isCompleted ? undefined : `${colorHex}33`}}>
+                      <span className={`w-3 h-3 mr-1 flex-shrink-0 text-xs flex items-center justify-center ${isCompleted ? 'opacity-50' : ''}`}>{event.event_types?.icon_name || '📝'}</span>
+                      <span className={`truncate ${isCompleted ? 'line-through text-slate-500 dark:text-slate-400' : `text-slate-700 dark:text-slate-200`}`}>
                         {event.title}
                       </span>
                     </div>

@@ -1,4 +1,8 @@
 
+
+
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -8,10 +12,11 @@ import {
 import { 
     ClockIcon as OutlineClockIcon, 
     LightBulbIcon as OutlineLightBulbIcon,
-    ArrowLeftOnRectangleIcon
+    ArrowLeftOnRectangleIcon,
+    QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
-import { CalendarEvent, GroundLogActionType, RecentViewItem, ActiveModuleType, WeatherLocationPreference, SeasonalTip } from '../types';
-import { MODULES, GROUND_LOG_ACTION_TYPE_ICONS } from '../constants';
+import { CalendarEventViewModel, RecentViewItem, ActiveModuleType, WeatherLocationPreference, SeasonalTip } from '../types';
+import { MODULES } from '../constants';
 import PlantStockIcon from './icons/PlantStockIcon';
 import GroundStockIcon from './icons/GroundStockIcon';
 import { BeakerIcon, CubeTransparentIcon, CheckCircleIcon as SolidCheckCircleIcon } from '@heroicons/react/24/outline';
@@ -80,10 +85,10 @@ const HomePageCard: React.FC<HomePageCardProps> = ({ title, description, imageUr
 };
 
 interface HomePageProps {
-  calendarEvents: CalendarEvent[];
+  calendarEvents: CalendarEventViewModel[];
   recentViews: RecentViewItem[];
   onNavigateToRecentItem: (item: RecentViewItem) => void;
-  onNavigateToModule: (moduleId: ActiveModuleType | 'home' | 'profile') => void;
+  onNavigateToModule: (moduleId: ActiveModuleType | 'home' | 'profile' | 'settings') => void;
   seasonalTips: SeasonalTipListItemData[];
   weatherLocationPreference: WeatherLocationPreference | null;
   isDefineLocationModalOpen: boolean; 
@@ -100,9 +105,9 @@ const HomePage: React.FC<HomePageProps> = ({
   today.setHours(0, 0, 0, 0);
 
   const todaysTasks = calendarEvents.filter(event => {
-    const eventDate = new Date(event.date + 'T00:00:00');
+    const eventDate = new Date(event.start_date);
     eventDate.setHours(0,0,0,0);
-    return eventDate.getTime() === today.getTime() && !event.isCompleted;
+    return eventDate.getTime() === today.getTime() && event.status !== 'Completed';
   }).sort((a,b) => a.title.localeCompare(b.title));
 
   const tomorrow = new Date(today);
@@ -111,23 +116,24 @@ const HomePage: React.FC<HomePageProps> = ({
   endOfWeek.setDate(today.getDate() + 6);
 
   const restOfWeekTasks = calendarEvents.filter(event => {
-    const eventDate = new Date(event.date + 'T00:00:00');
+    const eventDate = new Date(event.start_date);
     eventDate.setHours(0,0,0,0);
-    return eventDate >= tomorrow && eventDate <= endOfWeek && !event.isCompleted;
-  }).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime() || a.title.localeCompare(b.title));
+    return eventDate >= tomorrow && eventDate <= endOfWeek && event.status !== 'Completed';
+  }).sort((a,b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime() || a.title.localeCompare(b.title));
 
-
-  const getTaskIcon = (taskType: GroundLogActionType): React.FC<React.SVGProps<SVGSVGElement>> => {
-    return GROUND_LOG_ACTION_TYPE_ICONS[taskType] || SolidCheckCircleIcon; 
-  };
   
   const latestSeasonalTips = seasonalTips.slice(0, 3);
 
   const displayRecentViews = useMemo(() => {
     if (!recentViews || recentViews.length === 0) return [];
+    
+    const filteredViews = recentViews.filter(view => 
+        view.item_type === 'plant' || view.item_type === 'growing_ground'
+    );
+    
     const uniqueItemIds = new Set<string>();
     const uniqueViews: RecentViewItem[] = [];
-    for (const view of recentViews) { 
+    for (const view of filteredViews) { 
         if (!uniqueItemIds.has(view.item_id)) {
             uniqueItemIds.add(view.item_id);
             uniqueViews.push(view);
@@ -159,16 +165,13 @@ const HomePage: React.FC<HomePageProps> = ({
           ) : (
             <ul className="space-y-2.5">
               {todaysTasks.slice(0,3).map(task => { 
-                const TaskIcon = getTaskIcon(task.taskType);
-                 const itemColor = task.color.startsWith('bg-') ? task.color.split('-')[1] : 'gray';
-                 const iconColorClass = `text-${itemColor}-600 dark:text-${itemColor}-400`;
-
+                const colorHex = task.event_types?.color_code || '#6b7280';
                 return (
-                  <li key={task.id} className="flex items-start p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                    <TaskIcon className={`w-5 h-5 mr-3 mt-0.5 flex-shrink-0 ${iconColorClass}`} />
+                  <li key={task.id} className="flex items-start p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-lg" style={{ borderLeft: `4px solid ${colorHex}`}}>
+                    <span className="w-6 text-xl flex items-center justify-center mr-3 flex-shrink-0">{task.event_types?.icon_name || '📝'}</span>
                     <div>
-                      <p className={`text-sm font-medium text-${itemColor}-700 dark:text-${itemColor}-300`}>{task.title}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{task.sourceName} ({task.sourceModule})</p>
+                      <p className={`text-sm font-medium text-slate-800 dark:text-slate-100`}>{task.title}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{task.event_types?.name}</p>
                     </div>
                   </li>
                 );
@@ -188,18 +191,16 @@ const HomePage: React.FC<HomePageProps> = ({
              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-4">
                 <ul className="space-y-2.5 max-h-60 overflow-y-auto custom-scrollbar pr-1">
                     {restOfWeekTasks.map(task => {
-                        const TaskIcon = getTaskIcon(task.taskType);
-                        const itemColor = task.color.startsWith('bg-') ? task.color.split('-')[1] : 'gray';
-                        const iconColorClass = `text-${itemColor}-600 dark:text-${itemColor}-400`;
+                        const colorHex = task.event_types?.color_code || '#6b7280';
                         return (
-                            <li key={task.id} className="flex items-start p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                            <TaskIcon className={`w-5 h-5 mr-3 mt-0.5 flex-shrink-0 ${iconColorClass}`} />
+                            <li key={task.id} className="flex items-start p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-lg" style={{ borderLeft: `4px solid ${colorHex}`}}>
+                            <span className="w-6 text-xl flex items-center justify-center mr-3 flex-shrink-0">{task.event_types?.icon_name || '📝'}</span>
                             <div>
                                 <div className="flex justify-between items-baseline">
-                                    <p className={`text-sm font-medium text-${itemColor}-700 dark:text-${itemColor}-300`}>{task.title}</p>
-                                    <p className="text-xs text-slate-400 dark:text-slate-500 ml-2">{new Date(task.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short' })}</p>
+                                    <p className={`text-sm font-medium text-slate-800 dark:text-slate-100`}>{task.title}</p>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 ml-2">{new Date(task.start_date).toLocaleDateString(undefined, { weekday: 'short' })}</p>
                                 </div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">{task.sourceName} ({task.sourceModule})</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">{task.event_types?.name}</p>
                             </div>
                             </li>
                         );
@@ -226,7 +227,6 @@ const HomePage: React.FC<HomePageProps> = ({
               onClick={() => onNavigateToRecentItem(item)}
               itemType={item.item_type}
               baseColorClass={MODULES.find(m => m.id === item.item_module_id)?.baseColorClass || 'gray'}
-              imagePositionY={item.item_type === 'seasonal_tip' ? (seasonalTips.find(st => st.id === item.item_id)?.imagePosY || 50) : 50}
             />
           ))}
         </div>

@@ -4,17 +4,22 @@
 
 
 
+
+
 import { supabase } from '../../../../services/supabase';
 import {
   Plant, PlantInput, Fertilizer, FertilizerInput, CompostingMethod, CompostingMethodInput,
   PestGuardian, GrowHowTechnique, FloraPediaTableRow, PlantIdentificationOverview,
-  GrowingGround, GrowingGroundInput, GrowingGroundData, KeyFeaturesUsesGeneral, CultivationGrowingConditions, PlantNutritionFertilizationNeeds, PlantCareMaintenance, GrowthStageTimelinesDaysFromSowing, EcologicalInteractions, FruitingHarvestingConditional, UseCasesHumanSymbiosis, SeedSavingStorageDetails, LightRequirementsGeneral, WaterRequirementsGeneral, SoilRequirementsGeneral, EnvironmentalTolerancesDetailed, AirTemperatureCelsius, RelativeHumidityPercentage, LightIntensityLux, PlacementSpacing, ToxicityDetail, TextRange, HardinessZones, PruningShaping, RepottingForContainerPlants, PropagationMethodsSummary, SeedPropagationDetails, CuttingPropagationDetails, GraftingPropagationDetails, GrowthStageTimelineEntry, PestInteractions, DiseaseSusceptibility, PestDiseaseManagementSpecificStrategies, CompanionPlanting, PollinatorsWildlifeInteraction, FloweringPollinationForFruitSet, FruitVegetableDevelopmentEnhancement, HarvestingDetails, CulinaryUseItem, PreservationConservationTechnique, AlternativeProductUseItem, MedicinalUseItem, SeedSavingHarvestingGuide, OptimalSeedStorageConditions, FertilizerData, CompostingMethodData, RecentViewItem, ItemTypeForRecentView, ActiveModuleType, SeasonalTip, SeasonalTipInput, UserSourcingInformation, UserProfile, TipImage, GroundLogEntry
+  GrowingGround, GrowingGroundInput, GrowingGroundData, KeyFeaturesUsesGeneral, CultivationGrowingConditions, PlantNutritionFertilizationNeeds, PlantCareMaintenance, GrowthStageTimelinesDaysFromSowing, EcologicalInteractions, FruitingHarvestingConditional, UseCasesHumanSymbiosis, SeedSavingStorageDetails, LightRequirementsGeneral, WaterRequirementsGeneral, SoilRequirementsGeneral, EnvironmentalTolerancesDetailed, AirTemperatureCelsius, RelativeHumidityPercentage, LightIntensityLux, PlacementSpacing, ToxicityDetail, TextRange, HardinessZones, PruningShaping, RepottingForContainerPlants, PropagationMethodsSummary, SeedPropagationDetails, CuttingPropagationDetails, GraftingPropagationDetails, GrowthStageTimelineEntry, PestInteractions, DiseaseSusceptibility, PestDiseaseManagementSpecificStrategies, CompanionPlanting, PollinatorsWildlifeInteraction, FloweringPollinationForFruitSet, FruitVegetableDevelopmentEnhancement, HarvestingDetails, CulinaryUseItem, PreservationConservationTechnique, AlternativeProductUseItem, MedicinalUseItem, SeedSavingHarvestingGuide, OptimalSeedStorageConditions, FertilizerData, CompostingMethodData, RecentViewItem, ItemTypeForRecentView, ActiveModuleType, SeasonalTip, SeasonalTipInput, UserSourcingInformation, UserProfile, TipImage, GroundLogEntry, Json, UserPreferences, PlantJsonData, GrowingGroundPlant,
+  EventType, CalendarEvent, CalendarEventViewModel
 } from '../types';
 import { PlantListItemData, SeasonalTipListItemData } from './idbServiceTypes'; 
 import { produce } from 'https://esm.sh/immer@10.0.3' ;
 import { INITIAL_PLANTS_DATA_FOR_SEEDING, INITIAL_FERTILIZERS_DATA_FOR_SEEDING, INITIAL_COMPOSTING_METHODS_DATA_FOR_SEEDING } from './supabaseSeedData';
+import { EVENT_TYPES_SEED_DATA } from '../constants';
 import { decode } from 'base64-arraybuffer';
 import { deepMerge, isObject } from '../utils/objectUtils';
+import { Database } from '../../../../services/supabase';
 
 
 // --- Image Upload Helper ---
@@ -182,7 +187,7 @@ const getDefaultUserSourcingInformation = (row: FloraPediaTableRow, jsonDataUsi?
 
 // For FloraPedia (Plants)
 export const mapFloraPediaRowToPlant = (row: FloraPediaTableRow): Plant => {
-  const jsonData = row.data || {};
+  const jsonData = (row.data as { [key: string]: any }) || {};
 
   // Construct the single source of truth for identification from the row and its JSONB data.
   const pio = getDefaultPlantIdentificationOverview(row, jsonData.plant_identification_overview);
@@ -209,7 +214,7 @@ export const mapFloraPediaRowToPlant = (row: FloraPediaTableRow): Plant => {
   };
 };
 
-const mapPlantToFloraPediaRow = (plant: Partial<Plant>): Omit<FloraPediaTableRow, 'id' | 'created_at' | 'updated_at'> => {
+const mapPlantToFloraPediaRow = (plant: Partial<Plant>): Database['public']['Tables']['flora_pedia']['Insert'] => {
   const {
     id, created_at, updated_at, 
     parent_plant_id: direct_parent_plant_id,
@@ -240,7 +245,7 @@ const mapPlantToFloraPediaRow = (plant: Partial<Plant>): Omit<FloraPediaTableRow
   const gsh = pioSource?.growth_structure_habit ?? null;
   const lc = pioSource?.life_cycle ?? null;
   
-  const dataForJsonB: FloraPediaTableRow['data'] = {
+  const dataForJsonB: Partial<PlantJsonData> = {
     display_image_url: display_image_url, 
     image_object_position_y: image_object_position_y === undefined ? 50 : image_object_position_y,
     plant_identification_overview: pioSource, 
@@ -268,7 +273,7 @@ const mapPlantToFloraPediaRow = (plant: Partial<Plant>): Omit<FloraPediaTableRow
     parent_plant_id: ppid,
     growth_structure_habit: gsh,
     life_cycle: lc,
-    data: dataForJsonB,
+    data: dataForJsonB as unknown as Json,
   };
 };
 
@@ -295,7 +300,7 @@ export const addPlant = async (plantData: Omit<Plant, 'id' | 'created_at' | 'upd
 
   const { data: upsertedData, error: upsertError } = await supabase
     .from('flora_pedia')
-    .upsert([rowToUpsert], { onConflict: 'latin_name_scientific_name' }) 
+    .insert(rowToUpsert as any)
     .select()
     .single();
 
@@ -309,11 +314,11 @@ export const addPlant = async (plantData: Omit<Plant, 'id' | 'created_at' | 'upd
       const imagePath = `plants/${finalPlantData.id}/${Date.now()}_image.png`;
       const uploadedImageUrl = await uploadBase64Image('flora-pedia-images', imagePath, base64Image);
       
-      const updatedJsonData = { ...finalPlantData.data, display_image_url: uploadedImageUrl, image_object_position_y: 50 };
+      const updatedJsonData = { ...finalPlantData.data as object, display_image_url: uploadedImageUrl, image_object_position_y: 50 };
       
       const { data: updatedPlantWithImage, error: updateImageError } = await supabase
         .from('flora_pedia')
-        .update({ data: updatedJsonData })
+        .update({ data: updatedJsonData as unknown as Json } as any)
         .eq('id', finalPlantData.id)
         .select()
         .single();
@@ -330,86 +335,50 @@ export const addPlant = async (plantData: Omit<Plant, 'id' | 'created_at' | 'upd
 };
 
 export const updatePlant = async (plantId: string, updates: Partial<Plant>): Promise<Plant> => {
-  if (!supabase) throw new Error("Supabase client not initialized.");
-  const { data: existingRow, error: fetchError } = await supabase
-    .from('flora_pedia')
-    .select('*')
-    .eq('id', plantId)
-    .single();
+    if (!supabase) throw new Error("Supabase client not initialized.");
+    
+    // 1. Fetch the existing plant row from Supabase
+    const { data: existingRow, error: fetchError } = await supabase
+        .from('flora_pedia')
+        .select('*')
+        .eq('id', plantId)
+        .single();
+    
+    if (fetchError) throw new Error(`Failed to fetch plant for update: ${fetchError.message}`);
+    
+    // 2. Map the row to our rich Plant object to get the current full state
+    const existingPlantObject = mapFloraPediaRowToPlant(existingRow);
+    
+    // 3. Deep merge the incoming partial updates onto the current state
+    const mergedPlantObject = deepMerge(existingPlantObject, updates);
 
-  if (fetchError) throw new Error(fetchError.message);
-  if (!existingRow) throw new Error(`Plant with ID ${plantId} not found.`);
-
-  const directColumns: (keyof Plant)[] = [ 'parent_plant_id' ];
-  
-  const payload: { [key: string]: any } = {};
-  const dataUpdates: { [key: string]: any } = {};
-
-  // Separate updates for direct columns and the JSONB 'data' column
-  for (const key in updates) {
-    if (Object.prototype.hasOwnProperty.call(updates, key)) {
-      const typedKey = key as keyof Plant;
-      if (directColumns.includes(typedKey)) {
-        payload[key] = (updates as any)[key];
-      } else {
-        // All other updates go into the data object
-        dataUpdates[key] = (updates as any)[key];
-      }
+    // 4. Handle image upload if a new base64 image is provided in the merged object
+    if (mergedPlantObject.display_image_url && mergedPlantObject.display_image_url.startsWith('data:image')) {
+        const imagePath = `plants/${plantId}/hero_${Date.now()}.png`;
+        mergedPlantObject.display_image_url = await uploadBase64Image('flora-pedia-images', imagePath, mergedPlantObject.display_image_url);
+        // Reset position for new images unless specified otherwise
+        if (updates.image_object_position_y === undefined) {
+            mergedPlantObject.image_object_position_y = 50;
+        }
     }
-  }
+    
+    // 5. Map the complete, merged Plant object back into a row format for saving
+    const rowForUpdate = mapPlantToFloraPediaRow(mergedPlantObject);
 
-  // Handle image upload if a new base64 image is provided
-  if (dataUpdates.display_image_url && dataUpdates.display_image_url.startsWith('data:image')) {
-    try {
-      const imagePath = `plants/${plantId}/${Date.now()}_image.png`;
-      const uploadedImageUrl = await uploadBase64Image('flora-pedia-images', imagePath, dataUpdates.display_image_url);
-      dataUpdates.display_image_url = uploadedImageUrl;
-      if (dataUpdates.image_object_position_y === undefined) {
-        dataUpdates.image_object_position_y = 50;
-      }
-    } catch (imageError) {
-      console.error(`Failed to upload new image for plant ${plantId}. Proceeding with other updates.`, imageError);
-      // Revert to existing image URL if upload fails
-      dataUpdates.display_image_url = existingRow.data.display_image_url;
-    }
-  }
+    // 6. Perform the update operation with the complete row data
+    const { data: updatedData, error: updateError } = await supabase
+        .from('flora_pedia')
+        .update(rowForUpdate as any)
+        .eq('id', plantId)
+        .select()
+        .single();
 
-  // If there are updates for the 'data' column, deep merge them
-  if (Object.keys(dataUpdates).length > 0) {
-    // CRITICAL FIX: Use deepMerge to prevent data loss in nested JSON
-    payload.data = deepMerge(existingRow.data || {}, dataUpdates);
-
-    // After merging, update direct columns from the new data object for consistency
-    const pio = payload.data.plant_identification_overview;
-    if (pio) {
-        payload.latin_name_scientific_name = pio.latin_name_scientific_name;
-        payload.common_names = pio.common_names;
-        payload.plant_family = pio.plant_family;
-        payload.plant_type_category = pio.plant_type_category;
-        payload.description_brief = pio.description_brief;
-        payload.cultivar_variety = pio.cultivar_variety;
-        payload.growth_structure_habit = pio.growth_structure_habit;
-        payload.life_cycle = pio.life_cycle;
-    }
-  }
-  
-  if (Object.keys(payload).length === 0) {
-     return mapFloraPediaRowToPlant(existingRow as FloraPediaTableRow);
-  }
-
-  const { data: updatedData, error: updateError } = await supabase
-    .from('flora_pedia')
-    .update(payload)
-    .eq('id', plantId)
-    .select()
-    .single();
-
-  if (updateError) throw new Error(updateError.message);
-  if (!updatedData) throw new Error("Failed to update plant: no data returned.");
-  
-  return mapFloraPediaRowToPlant(updatedData as FloraPediaTableRow);
+    if (updateError) throw new Error(`Update plant failed: ${updateError.message}`);
+    if (!updatedData) throw new Error("Failed to update plant: no data returned from Supabase.");
+    
+    // 7. Return the newly updated and re-mapped rich Plant object
+    return mapFloraPediaRowToPlant(updatedData as FloraPediaTableRow);
 };
-
 
 export const deletePlant = async (plantId: string): Promise<void> => {
   if (!supabase) throw new Error("Supabase client not initialized.");
@@ -422,7 +391,7 @@ export const getFertilizers = async (): Promise<Fertilizer[]> => {
   if (!supabase) return [];
   const { data, error } = await supabase.from('nutri_base').select('*');
   if (error) throw new Error(error.message);
-  return data as Fertilizer[];
+  return data.map(item => ({...item, data: item.data as FertilizerData})) as Fertilizer[];
 };
 
 export const addFertilizer = async (fertilizerInput: FertilizerInput): Promise<Fertilizer> => {
@@ -445,56 +414,41 @@ export const addFertilizer = async (fertilizerInput: FertilizerInput): Promise<F
     image_object_position_y: fertilizerInput.image_object_position_y === undefined ? 50 : fertilizerInput.image_object_position_y,
   };
 
-  const newFertilizer: Omit<Fertilizer, 'id' | 'created_at' | 'updated_at'> = {
+  const newFertilizer: Database['public']['Tables']['nutri_base']['Insert'] = {
     fertilizer_name: fertilizerInput.name,
     type: fertilizerInput.type || 'Other',
     form: fertilizerInput.form || 'Other',
-    data: newFertilizerData,
+    data: newFertilizerData as unknown as Json,
   };
 
-  const { data, error } = await supabase.from('nutri_base').insert([newFertilizer]).select().single();
+  const { data, error } = await supabase.from('nutri_base').insert(newFertilizer as any).select().single();
   if (error) throw new Error(error.message);
-  return data as Fertilizer;
+  return { ...data, data: data.data as FertilizerData } as Fertilizer;
 };
 
 export const updateFertilizer = async (fertilizerId: string, updates: Partial<Fertilizer>): Promise<Fertilizer> => {
-  if (!supabase) throw new Error("Supabase client not initialized.");
-  
-  const { data: existingRow, error: fetchError } = await supabase
-    .from('nutri_base')
-    .select('*')
-    .eq('id', fertilizerId)
-    .single();
+    if (!supabase) throw new Error("Supabase client not initialized.");
+    
+    const { data: existingRow, error: fetchError } = await supabase
+        .from('nutri_base').select('*').eq('id', fertilizerId).single();
+    if (fetchError) throw new Error(`Fetch fertilizer for update failed: ${fetchError.message}`);
 
-  if (fetchError) throw new Error(`Fetch fertilizer for update failed: ${fetchError.message}`);
-
-  let payload = { ...updates };
-
-  if (updates.data?.imageUrl && updates.data.imageUrl.startsWith('data:image')) {
-    const imagePath = `fertilizers/${fertilizerId}/${Date.now()}_image.png`;
-    const uploadedUrl = await uploadBase64Image('fertilizer-images', imagePath, updates.data.imageUrl);
-    payload = produce(payload, draft => {
-        if (draft.data) {
-            draft.data.imageUrl = uploadedUrl;
-             if (updates.data?.image_object_position_y === undefined) {
-                draft.data.image_object_position_y = 50;
-            }
+    const newState = deepMerge(existingRow, updates);
+    
+    if (newState.data.imageUrl && newState.data.imageUrl.startsWith('data:image')) {
+        const imagePath = `fertilizers/${fertilizerId}/${Date.now()}_image.png`;
+        newState.data.imageUrl = await uploadBase64Image('fertilizer-images', imagePath, newState.data.imageUrl);
+        if (newState.data.image_object_position_y === undefined) {
+            newState.data.image_object_position_y = 50;
         }
-    });
-  }
-  
-  if (payload.data) {
-    payload.data = deepMerge(existingRow.data || {}, payload.data);
-  }
+    }
 
-  const { data, error } = await supabase
-    .from('nutri_base')
-    .update(payload)
-    .eq('id', fertilizerId)
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data as Fertilizer;
+    const { id, created_at, updated_at, ...updatePayload } = newState;
+
+    const { data, error } = await supabase
+        .from('nutri_base').update(updatePayload as any).eq('id', fertilizerId).select().single();
+    if (error) throw new Error(error.message);
+    return { ...data, data: data.data as FertilizerData } as Fertilizer;
 };
 
 // --- CompostCorner Service ---
@@ -502,7 +456,7 @@ export const getCompostingMethods = async (): Promise<CompostingMethod[]> => {
   if (!supabase) return [];
   const { data, error } = await supabase.from('compost_corner').select('*');
   if (error) throw new Error(error.message);
-  return data as CompostingMethod[];
+  return data.map(item => ({...item, data: item.data as CompostingMethodData})) as CompostingMethod[];
 };
 
 export const addCompostingMethod = async (methodInput: CompostingMethodInput): Promise<CompostingMethod> => {
@@ -529,55 +483,40 @@ export const addCompostingMethod = async (methodInput: CompostingMethodInput): P
     imageUrl: imageUrl,
     image_object_position_y: methodInput.image_object_position_y === undefined ? 50 : methodInput.image_object_position_y,
   };
-  const newMethod: Omit<CompostingMethod, 'id' | 'created_at' | 'updated_at'> = {
+  const newMethod: Database['public']['Tables']['compost_corner']['Insert'] = {
     method_name: methodInput.name,
     primary_composting_approach: methodInput.approach || 'Other',
     scale_of_operation: 'Medium (Home Garden)', 
-    data: newMethodData,
+    data: newMethodData as unknown as Json,
   };
-  const { data, error } = await supabase.from('compost_corner').insert([newMethod]).select().single();
+  const { data, error } = await supabase.from('compost_corner').insert(newMethod as any).select().single();
   if (error) throw new Error(error.message);
-  return data as CompostingMethod;
+  return { ...data, data: data.data as CompostingMethodData } as CompostingMethod;
 };
 
 export const updateCompostingMethod = async (methodId: string, updates: Partial<CompostingMethod>): Promise<CompostingMethod> => {
- if (!supabase) throw new Error("Supabase client not initialized.");
+    if (!supabase) throw new Error("Supabase client not initialized.");
 
- const { data: existingRow, error: fetchError } = await supabase
-    .from('compost_corner')
-    .select('*')
-    .eq('id', methodId)
-    .single();
+    const { data: existingRow, error: fetchError } = await supabase
+        .from('compost_corner').select('*').eq('id', methodId).single();
+    if (fetchError) throw new Error(`Fetch composting method for update failed: ${fetchError.message}`);
 
- if (fetchError) throw new Error(`Fetch composting method for update failed: ${fetchError.message}`);
+    const newState = deepMerge(existingRow, updates);
 
- let payload = { ...updates };
-
-  if (updates.data?.imageUrl && updates.data.imageUrl.startsWith('data:image')) {
-    const imagePath = `composting_methods/${methodId}/${Date.now()}_image.png`;
-    const uploadedUrl = await uploadBase64Image('compost-method-images', imagePath, updates.data.imageUrl);
-    payload = produce(payload, draft => {
-        if (draft.data) {
-            draft.data.imageUrl = uploadedUrl;
-            if (updates.data?.image_object_position_y === undefined) {
-                draft.data.image_object_position_y = 50;
-            }
+    if (newState.data.imageUrl && newState.data.imageUrl.startsWith('data:image')) {
+        const imagePath = `composting_methods/${methodId}/${Date.now()}_image.png`;
+        newState.data.imageUrl = await uploadBase64Image('compost-method-images', imagePath, newState.data.imageUrl);
+        if (newState.data.image_object_position_y === undefined) {
+            newState.data.image_object_position_y = 50;
         }
-    });
-  }
+    }
+    
+    const { id, created_at, updated_at, ...updatePayload } = newState;
 
-  if (payload.data) {
-    payload.data = deepMerge(existingRow.data || {}, payload.data);
-  }
-
-  const { data, error } = await supabase
-    .from('compost_corner')
-    .update(payload)
-    .eq('id', methodId)
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data as CompostingMethod;
+    const { data, error } = await supabase
+        .from('compost_corner').update(updatePayload as any).eq('id', methodId).select().single();
+    if (error) throw new Error(error.message);
+    return { ...data, data: data.data as CompostingMethodData } as CompostingMethod;
 };
 
 // --- GrowingGrounds Service ---
@@ -586,19 +525,36 @@ export const getGrowingGrounds = async (): Promise<GrowingGround[]> => {
   const { data, error } = await supabase.from('growing_grounds').select('*');
   if (error) throw new Error(error.message);
   return data.map(row => {
-    const groundData = row.data || {};
+    const groundData = (row.data as Partial<GrowingGroundData>) || {};
+    // Backward compatibility for stageLog
+    const mappedPlants = (groundData.plants || []).map((p: any) => {
+        const { status, ...restOfPlant } = p;
+        if (!restOfPlant.stageLog || restOfPlant.stageLog.length === 0) {
+            restOfPlant.stageLog = [{ stage: status || 'Planning', date: p.datePlanted }];
+        }
+        return restOfPlant as GrowingGroundPlant;
+    });
+
     return {
-      ...groundData,
       id: row.id,
       name: row.name,
-      // Ensure essential arrays are not undefined
-      plants: groundData.plants || [],
+      description: groundData.description || 'No description',
+      type: groundData.type || 'Other',
+      imageUrl: groundData.imageUrl || null,
+      image_object_position_y: groundData.image_object_position_y || 50,
+      lightHoursMorning: groundData.lightHoursMorning || 0,
+      lightHoursAfternoon: groundData.lightHoursAfternoon || 0,
+      soilType: groundData.soilType || 'Other',
+      customSoilDescription: groundData.customSoilDescription,
+      areaDimensions: groundData.areaDimensions,
+      plants: mappedPlants,
       logs: groundData.logs || [],
-      calendarTasks: groundData.calendarTasks || [],
+      customNotes: groundData.customNotes,
+      informationSources: groundData.informationSources,
       created_at: row.created_at,
       updated_at: row.updated_at,
-    };
-  }) as GrowingGround[];
+    } as GrowingGround;
+  });
 };
 
 export const addGrowingGround = async (groundInput: GrowingGroundInput, userId: string): Promise<GrowingGround> => {
@@ -619,11 +575,10 @@ export const addGrowingGround = async (groundInput: GrowingGroundInput, userId: 
     soilType: 'Loamy', 
     plants: [],
     logs: [],
-    calendarTasks: [],
   };
   const { data, error } = await supabase
     .from('growing_grounds')
-    .insert([{ name: groundInput.name, data: newGroundData, user_id: userId }]) 
+    .insert({ name: groundInput.name, data: newGroundData as unknown as Json, user_id: userId } as any) 
     .select()
     .single();
     
@@ -631,7 +586,7 @@ export const addGrowingGround = async (groundInput: GrowingGroundInput, userId: 
   return {
     id: data.id,
     name: data.name,
-    ...data.data,
+    ...(data.data as GrowingGroundData),
     created_at: data.created_at,
     updated_at: data.updated_at,
   } as GrowingGround;
@@ -641,38 +596,31 @@ export const updateGrowingGround = async (groundId: string, updates: Partial<Gro
     if (!supabase) throw new Error("Supabase client not initialized.");
 
     const { data: existingRow, error: fetchError } = await supabase
-        .from('growing_grounds')
-        .select('name, data')
-        .eq('id', groundId)
-        .single();
+        .from('growing_grounds').select('*').eq('id', groundId).single();
     if (fetchError) throw new Error(`Fetch ground for update failed: ${fetchError.message}`);
-
-    const payload: { name?: string; data?: any } = {};
-    const { id, created_at, updated_at, ...restOfUpdates } = updates;
-    const { name, ...dataUpdates } = restOfUpdates as any;
-
-    if (name !== undefined && name !== existingRow.name) {
-        payload.name = name;
-    }
-
+    
     const { data: { user } } = await supabase.auth.getUser();
-    const userId = user?.id || 'unknown_user';
+    if (!user) throw new Error("User must be logged in to update growing grounds.");
 
-    if (dataUpdates.imageUrl && typeof dataUpdates.imageUrl === 'string' && dataUpdates.imageUrl.startsWith('data:image')) {
-        const imagePath = `growing_grounds/${userId}/${groundId}/hero_${Date.now()}.png`;
-        dataUpdates.imageUrl = await uploadBase64Image('growing-grounds-gallery-images', imagePath, dataUpdates.imageUrl);
-        if (updates.image_object_position_y === undefined) {
-             dataUpdates.image_object_position_y = 50;
+    const newState = deepMerge(existingRow, updates);
+    
+    // Handle Hero Image Upload
+    if (newState.imageUrl && newState.imageUrl.startsWith('data:image')) {
+        const imagePath = `growing_grounds/${user.id}/${groundId}/hero_${Date.now()}.png`;
+        newState.imageUrl = await uploadBase64Image('growing-grounds-gallery-images', imagePath, newState.imageUrl);
+        if (newState.image_object_position_y === undefined) {
+             newState.image_object_position_y = 50;
         }
     }
-
-    if (dataUpdates.logs && Array.isArray(dataUpdates.logs)) {
-        dataUpdates.logs = await Promise.all(dataUpdates.logs.map(async (log: GroundLogEntry) => {
-            if(log.photoUrls && Array.isArray(log.photoUrls)){
+    
+    // Handle Log Image Uploads
+    if (newState.logs && Array.isArray(newState.logs)) {
+        newState.logs = await Promise.all(newState.logs.map(async (log: GroundLogEntry) => {
+            if (log.photoUrls && Array.isArray(log.photoUrls)) {
                 const processedUrls = await Promise.all(log.photoUrls.map(async (url, index) => {
                     if (url.startsWith('data:image')) {
                         const logId = log.id || Date.now();
-                        const imagePath = `growing_grounds/${userId}/${groundId}/log_${logId}_${index}.png`;
+                        const imagePath = `growing_grounds/${user.id}/${groundId}/log_${logId}_${index}.png`;
                         return uploadBase64Image('growing-grounds-gallery-images', imagePath, url);
                     }
                     return url;
@@ -683,35 +631,27 @@ export const updateGrowingGround = async (groundId: string, updates: Partial<Gro
         }));
     }
 
-    const finalData = deepMerge(existingRow.data || {}, dataUpdates);
-    payload.data = finalData;
-
-    if (Object.keys(payload).length === 0) {
-        return {
-            id: groundId,
-            name: existingRow.name,
-            ...existingRow.data,
-            created_at: '', // Satisfy type, not returned from this branch
-            updated_at: '', // Satisfy type, not returned from this branch
-        } as GrowingGround;
+    const { id, user_id, created_at, updated_at, ...restOfState } = newState;
+    const { name, ...dataPayload } = restOfState;
+    
+    const updatePayload: Partial<Database['public']['Tables']['growing_grounds']['Update']> = {};
+    if (name !== existingRow.name) {
+      updatePayload.name = name;
     }
+    updatePayload.data = dataPayload as unknown as Json;
     
     const { data: updatedData, error: updateError } = await supabase
-        .from('growing_grounds')
-        .update(payload)
-        .eq('id', groundId)
-        .select()
-        .single();
-
+        .from('growing_grounds').update(updatePayload as any).eq('id', groundId).select().single();
     if (updateError) throw new Error(`Update ground failed: ${updateError.message}`);
 
     return {
         id: updatedData.id,
         name: updatedData.name,
-        ...updatedData.data,
-    } as GrowingGround;
+        ...(updatedData.data as GrowingGroundData),
+        created_at: updatedData.created_at,
+        updated_at: updatedData.updated_at
+    };
 };
-
 
 export const deleteGrowingGround = async (groundId: string): Promise<void> => {
   if (!supabase) throw new Error("Supabase client not initialized.");
@@ -747,7 +687,7 @@ export const addRecentView = async (
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("User not authenticated to add recent view.");
 
-  const newView = {
+  const newView: Database['public']['Tables']['user_view_history']['Insert'] = {
     user_id: user.id,
     item_id: itemId,
     item_type: itemType,
@@ -756,7 +696,7 @@ export const addRecentView = async (
     item_module_id: itemModuleId,
     viewed_at: new Date().toISOString(),
   };
-  const { data, error } = await supabase.from('user_view_history').insert([newView]).select().single();
+  const { data, error } = await supabase.from('user_view_history').insert(newView as any).select().single();
   if (error) throw new Error(error.message);
   return data as RecentViewItem;
 };
@@ -785,48 +725,50 @@ export const addSeasonalTip = async (tipInput: SeasonalTipInput): Promise<Season
     }
   }
 
-  const newTip: Omit<SeasonalTip, 'id' | 'created_at' | 'updated_at'> = {
+  const newTip: Database['public']['Tables']['seasonal_tips']['Insert'] = {
     title: tipInput.title,
     description: tipInput.description,
     content_type: tipInput.content_type,
     source_url: tipInput.source_url,
     article_markdown_content: tipInput.article_markdown_content,
-    images: processedImages,
+    images: processedImages as unknown as Json,
     tags: tipInput.tags,
     author_name: tipInput.author_name,
     published_at: new Date().toISOString(), 
   };
-  const { data, error } = await supabase.from('seasonal_tips').insert([newTip]).select().single();
+  const { data, error } = await supabase.from('seasonal_tips').insert(newTip as any).select().single();
   if (error) throw new Error(error.message);
-  return { ...data, images: data.images || [] } as SeasonalTip;
+  return { ...data, images: data.images as TipImage[] || [] } as SeasonalTip;
 };
 
 export const updateSeasonalTip = async (tipId: string, updates: Partial<SeasonalTipInput>): Promise<SeasonalTip> => {
   if (!supabase) throw new Error("Supabase client not initialized.");
-  let finalUpdates: Partial<SeasonalTipInput> = { ...updates }; 
   
-  if (updates.images && Array.isArray(updates.images)) {
-    const processedImages: TipImage[] = [];
-    for (const image of updates.images) {
-      if (image.url && image.url.startsWith('data:image')) {
-        const imagePath = `seasonal_tips/${tipId}/${Date.now()}_${Math.random()}_cover.png`;
-        const uploadedUrl = await uploadBase64Image('seasonal-tips-images', imagePath, image.url);
-        processedImages.push({ url: uploadedUrl, object_position_y: image.object_position_y || 50 });
-      } else if (image.url) {
-        processedImages.push(image);
-      }
-    }
-    finalUpdates.images = processedImages;
+  const { data: existingRow, error: fetchError } = await supabase
+      .from('seasonal_tips').select('*').eq('id', tipId).single();
+  if (fetchError) throw new Error(`Fetch seasonal tip for update failed: ${fetchError.message}`);
+  
+  const newState = deepMerge(existingRow, updates);
+  
+  if (newState.images && Array.isArray(newState.images)) {
+      newState.images = await Promise.all(
+          newState.images.map(async (image: TipImage) => {
+              if (image.url && image.url.startsWith('data:image')) {
+                  const imagePath = `seasonal_tips/${tipId}/${Date.now()}_image.png`;
+                  const uploadedUrl = await uploadBase64Image('seasonal-tips-images', imagePath, image.url);
+                  return { ...image, url: uploadedUrl };
+              }
+              return image;
+          })
+      );
   }
-  
+
+  const { id, created_at, updated_at, ...updatePayload } = newState;
+
   const { data, error } = await supabase
-    .from('seasonal_tips')
-    .update(finalUpdates as Partial<SeasonalTip>) 
-    .eq('id', tipId)
-    .select()
-    .single();
+      .from('seasonal_tips').update(updatePayload as any).eq('id', tipId).select().single();
   if (error) throw new Error(error.message);
-  return { ...data, images: data.images || [] } as SeasonalTip;
+  return data as SeasonalTip;
 };
 
 
@@ -848,7 +790,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
     id: userId,
     full_name: user.user_metadata.full_name || null,
     avatar_url: user.user_metadata.avatar_url || null,
-    preferences: profileData?.preferences || null,
+    preferences: (profileData?.preferences as UserPreferences) || {},
     updated_at: profileData?.updated_at || user.updated_at,
   };
 
@@ -883,11 +825,11 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
     
     if (fetchError && fetchError.code !== 'PGRST116') throw new Error(`Fetch preferences error: ${fetchError.message}`);
 
-    const mergedPreferences = deepMerge(existingProfile?.preferences || {}, preferences);
+    const mergedPreferences = deepMerge((existingProfile?.preferences as object) || {}, preferences);
     
     const { error: profileUpdateError } = await supabase
       .from('user_profiles')
-      .upsert([{ id: userId, preferences: mergedPreferences }], { onConflict: 'id' });
+      .upsert({ id: userId, preferences: mergedPreferences as unknown as Json } as any);
 
     if (profileUpdateError) throw new Error(`Profile update error: ${profileUpdateError.message}`);
   }
@@ -932,15 +874,152 @@ export const seedInitialData = async () => {
   console.log("Initial data seeding process completed.");
 };
 
+// --- Event Types & Calendar Service ---
+export const getEventTypes = async (): Promise<EventType[]> => {
+    if (!supabase) return [];
+    const { data, error } = await supabase.from('event_types').select('*');
+    if (error) throw new Error(error.message);
+    return data as EventType[];
+};
+
+export const seedEventTypes = async () => {
+    if (!supabase) return;
+    const { count, error } = await supabase.from('event_types').select('*', { count: 'exact', head: true });
+    if (error) {
+        console.error("Error checking for event types:", error.message);
+        return;
+    }
+    if (count === 0) {
+        console.log("Seeding event types...");
+        const { error: insertError } = await supabase.from('event_types').insert(EVENT_TYPES_SEED_DATA as any);
+        if (insertError) {
+            console.error("Error seeding event types:", insertError.message);
+        }
+    }
+};
+
+export const getCalendarEvents = async (userId?: string): Promise<CalendarEventViewModel[]> => {
+    if (!supabase || !userId) return [];
+    
+    const { data: events, error: eventsError } = await supabase
+      .from('calendar_events')
+      .select('*, event_types (*)')
+      .eq('user_id', userId);
+    
+    if (eventsError) throw new Error(eventsError.message);
+    if (!events) return [];
+  
+    const eventIds = events.map(e => e.id);
+    const { data: groundLinks, error: linksError } = await supabase
+      .from('growing_ground_events')
+      .select('*')
+      .in('calendar_event_id', eventIds);
+  
+    if (linksError) throw new Error(linksError.message);
+    
+    const eventToGroundsMap = new Map<string, string[]>();
+    if (groundLinks) {
+        for (const link of groundLinks) {
+            if (!eventToGroundsMap.has(link.calendar_event_id)) {
+                eventToGroundsMap.set(link.calendar_event_id, []);
+            }
+            eventToGroundsMap.get(link.calendar_event_id)?.push(link.growing_ground_id);
+        }
+    }
+  
+    const today = new Date();
+    today.setHours(0,0,0,0);
+  
+    return events.map(event => {
+      const eventDate = new Date(event.start_date);
+      eventDate.setHours(0,0,0,0);
+      
+      let status: CalendarEventViewModel['status'];
+      if(event.is_completed) {
+        status = 'Completed';
+      } else if (eventDate < today) {
+        status = 'Overdue';
+      } else {
+        status = 'Pending';
+      }
+  
+      return {
+        ...event,
+        status: status,
+        ground_ids: eventToGroundsMap.get(event.id) || [],
+        color: event.event_types?.color_code || '#6b7280',
+        iconName: event.event_types?.icon_name || 'InformationCircleIcon',
+      };
+    });
+};
+
+export const addCalendarEvent = async (payload: { event: Omit<CalendarEvent, 'id' | 'created_at' | 'updated_at' | 'event_types' | 'is_completed'>, groundId?: string }): Promise<CalendarEvent> => {
+    const { event, groundId } = payload;
+    if (!supabase) throw new Error("Supabase client not initialized.");
+    
+    const insertPayload = { ...event, is_completed: false };
+    
+    const { data: newEvent, error: eventError } = await supabase
+        .from('calendar_events')
+        .insert(insertPayload as any)
+        .select(`*, event_types (*)`)
+        .single();
+    
+    if (eventError) throw new Error(`Failed to add event: ${eventError.message}`);
+    if (!newEvent) throw new Error("Event creation returned no data.");
+    
+    if (groundId) {
+        const { error: linkError } = await supabase
+            .from('growing_ground_events')
+            .insert({
+                calendar_event_id: newEvent.id,
+                growing_ground_id: groundId
+            } as any);
+        
+        if (linkError) {
+            // Attempt to roll back the event creation for consistency
+            console.error(`Failed to link event to ground: ${linkError.message}. Rolling back event creation.`);
+            await supabase.from('calendar_events').delete().eq('id', newEvent.id);
+            throw new Error(`Failed to link event to ground: ${linkError.message}`);
+        }
+    }
+    
+    return newEvent as CalendarEvent;
+};
+
+export const updateCalendarEvent = async (eventId: string, updates: Partial<CalendarEvent>): Promise<CalendarEvent> => {
+    if (!supabase) throw new Error("Supabase client not initialized.");
+    
+    const { event_types, ...updatePayload } = updates;
+
+    const { data, error } = await supabase
+        .from('calendar_events')
+        .update(updatePayload as any)
+        .eq('id', eventId)
+        .select(`*, event_types (*)`)
+        .single();
+    
+    if (error) throw new Error(error.message);
+    return data as CalendarEvent;
+};
+
+export const deleteCalendarEvent = async (eventId: string): Promise<void> => {
+    if (!supabase) throw new Error("Supabase client not initialized.");
+    const { error } = await supabase.from('calendar_events').delete().eq('id', eventId);
+    if (error) throw new Error(error.message);
+};
+
+
 export function mapPlantToPlantListItemData(plant: Plant | FloraPediaTableRow): PlantListItemData {
   if ('data' in plant && typeof (plant as FloraPediaTableRow).data === 'object') { 
     const row = plant as FloraPediaTableRow;
+    const rowData = row.data as any;
     return {
       id: row.id,
       commonName: row.common_names?.[0] || 'Unknown Plant',
       scientificName: row.latin_name_scientific_name || 'N/A',
-      imageUrl: (row.data as any)?.display_image_url || null,
-      imagePosY: (row.data as any)?.image_object_position_y || 50,
+      imageUrl: rowData?.display_image_url || null,
+      imagePosY: rowData?.image_object_position_y || 50,
       family: row.plant_family || null,
       typeCategory: row.plant_type_category || null,
       updatedAt: row.updated_at,

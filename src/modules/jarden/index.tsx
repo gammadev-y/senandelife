@@ -2,30 +2,33 @@
 
 
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+
+
+
+
+
+import React, { useState, useCallback, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import {
     Plant, Fertilizer, CompostingMethod, GrowingGround, ActiveModuleType,
     PlantInput, FertilizerInput, CompostingMethodInput, GrowingGroundInput, SeasonalTipInput,
-    CustomAiPromptModalData, CalendarEvent, GroundCalendarTask, RecentViewItem, WeatherLocationPreference, SeasonalTip, UserProfile, GroundLogEntry
+    CustomAiPromptModalData, RecentViewItem, WeatherLocationPreference, SeasonalTip, GroundLogEntry, PlantStage, EventType, CalendarEvent, CalendarEventViewModel, GrowingGroundPlant
 } from './types';
 import {
-    addPlant, updatePlant, getPlants,
-    addFertilizer, updateFertilizer, getFertilizers,
-    addCompostingMethod, updateCompostingMethod, getCompostingMethods,
-    addGrowingGround, updateGrowingGround, getGrowingGrounds, deleteGrowingGround,
-    addRecentView, getRecentViews,
-    getSeasonalTips, addSeasonalTip, updateSeasonalTip,
-    seedInitialData, mapPlantToPlantListItemData, mapSeasonalTipToListItemData
+    addPlant, updatePlant,
+    addFertilizer, updateFertilizer,
+    addCompostingMethod, updateCompostingMethod,
+    addGrowingGround, updateGrowingGround, deleteGrowingGround,
+    addRecentView,
+    addSeasonalTip, updateSeasonalTip,
+    addCalendarEvent, updateCalendarEvent, deleteCalendarEvent
 } from './services/supabaseService';
 import { createDefaultPlantStructureInternal } from './utils/plantUtils';
-import { deepMerge } from './utils/objectUtils';
-import { getAiAssistedDataForPlantSection, generateGroundTasksWithAi } from './services/geminiService';
-import { produce } from 'immer';
+import { getAiAssistedDataForPlant, getAiAssistedDataForPlantSection, generateGroundTasksWithAi } from './services/geminiService';
+import { JardenDataProvider, useJardenData } from './context/JardenDataContext';
 
 import AuthPage from './components/AuthPage';
 import JardenLayout from './components/JardenLayout';
-
 import AddNewPlantModal from './components/AddNewPlantModal';
 import AddNewFertilizerModal from './components/AddNewFertilizerModal';
 import AddNewCompostingMethodModal from './components/AddNewCompostingMethodModal';
@@ -34,102 +37,40 @@ import AddNewSeasonalTipModal from './components/AddNewSeasonalTipModal';
 import CustomAiPromptModal from './components/CustomAiPromptModal';
 import AddPlantToGroundModal from './components/AddPlantToGroundModal';
 import AddLogEntryModal from './components/AddLogEntryModal';
-import AddGroundCalendarTaskModal from './components/AddGroundCalendarTaskModal';
-import { PlantListItemData, SeasonalTipListItemData } from './services/idbServiceTypes';
+import AddCalendarEventModal from './components/AddCalendarEventModal';
 import LoadingSpinner from './components/LoadingSpinner';
 import { MODULES } from './constants';
 import DefineLocationModal from './components/DefineLocationModal';
+import UpdatePlantStageModal from './components/UpdatePlantStageModal';
+import { produce } from 'immer';
 
-type ModalType = 'addPlant' | 'addFertilizer' | 'addCompost' | 'addGround' | 'addTip' | 'customAiPrompt' | 'addPlantToGround' | 'addLogEntry' | 'addGroundTask' | 'defineLocation';
+type ModalType = 'addPlant' | 'addFertilizer' | 'addCompost' | 'addGround' | 'addTip' | 'customAiPrompt' | 'addPlantToGround' | 'addLogEntry' | 'addEvent' | 'defineLocation' | 'updatePlantStage';
 
+// This is the new main UI component, which consumes the data from the context.
+const JardenModuleContent: React.FC = () => {
+    const { session, user, profile, signOut, updateProfileData } = useAuth();
+    
+    // Consume all data and core functions from the new context
+    const {
+        plants, fertilizers, compostingMethods, growingGrounds, seasonalTips, recentViews,
+        eventTypes, calendarEvents,
+        plantListItems, seasonalTipListItems, isDataLoading, appError, setAppError, refreshAllData
+    } = useJardenData();
 
-const JardenModule: React.FC = () => {
-    const { session, user, profile, loading: authLoading, signOut, updateProfileData } = useAuth();
+    // UI-specific state remains here.
     const [activeModuleId, setActiveModuleId] = useState<ActiveModuleType | 'home' | 'profile' | 'settings'>('home');
-
-    const [plants, setPlants] = useState<Plant[]>([]);
-    const [fertilizers, setFertilizers] = useState<Fertilizer[]>([]);
-    const [compostingMethods, setCompostingMethods] = useState<CompostingMethod[]>([]);
-    const [growingGrounds, setGrowingGrounds] = useState<GrowingGround[]>([]);
-    const [seasonalTips, setSeasonalTips] = useState<SeasonalTip[]>([]);
-    const [recentViews, setRecentViews] = useState<RecentViewItem[]>([]);
-
-    const plantListItems = useMemo(() => plants.map(mapPlantToPlantListItemData), [plants]);
-    const seasonalTipListItems = useMemo(() => seasonalTips.map(mapSeasonalTipToListItemData), [seasonalTips]);
-
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [appError, setAppError] = useState<string | null>(null);
     const [isLoadingAi, setIsLoadingAi] = useState(false);
-
     const [isLoadingAiForGroundTasks, setIsLoadingAiForGroundTasks] = useState(false);
-    const [isDataLoading, setIsDataLoading] = useState(true);
-
     const [modalOpen, setModalOpen] = useState<ModalType | null>(null);
     const [customAiModalData, setCustomAiModalData] = useState<CustomAiPromptModalData | null>(null);
     const [contextualGroundId, setContextualGroundId] = useState<string | null>(null);
-
-    const refreshAllData = useCallback(async (isInitialLoad = false) => {
-        if (!user) return;
-        if (isInitialLoad) {
-            setIsDataLoading(true);
-        }
-        setAppError(null);
-        try {
-            if (isInitialLoad) {
-                await seedInitialData();
-            }
-            const [
-                plantsData, fertilizersData, compostingMethodsData,
-                growingGroundsData, recentViewsData, seasonalTipsData
-            ] = await Promise.all([
-                getPlants(), getFertilizers(), getCompostingMethods(),
-                getGrowingGrounds(), getRecentViews(), getSeasonalTips()
-            ]);
-
-            setPlants(plantsData);
-            setFertilizers(fertilizersData);
-            setCompostingMethods(compostingMethodsData);
-            setGrowingGrounds(growingGroundsData);
-            setRecentViews(recentViewsData);
-            setSeasonalTips(seasonalTipsData);
-
-        } catch (error) {
-            console.error("Failed to load data:", error);
-            setAppError(error instanceof Error ? error.message : "An unknown error occurred while loading data.");
-        } finally {
-            if (isInitialLoad) {
-                setIsDataLoading(false);
-            }
-        }
-    }, [user, setAppError, setIsDataLoading]);
-
-    useEffect(() => {
-        if (session && user) {
-            const timeoutId = setTimeout(() => {
-                if (isDataLoading) { // Check if it's still loading
-                    console.error("Data loading timed out after 20 seconds.");
-                    setAppError("Loading your Jarden is taking longer than expected. Please check your connection and refresh.");
-                    setIsDataLoading(false); // Stop showing the loading screen
-                }
-            }, 20000); // 20-second timeout
-
-            refreshAllData(true).finally(() => {
-                clearTimeout(timeoutId); // Loading finished, clear the timeout
-            });
-
-            return () => {
-                clearTimeout(timeoutId); // Cleanup on unmount
-            };
-        } else {
-            setIsDataLoading(false);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.id]);
-
+    const [plantToUpdate, setPlantToUpdate] = useState<any | null>(null);
+    
     const handleModuleNavigation = (newModuleId: ActiveModuleType | 'home' | 'profile' | 'settings') => {
         if (activeModuleId === newModuleId) {
-            setSelectedItemId(null); // Deselect if clicking the same active module
+            setSelectedItemId(null); 
         } else {
             setActiveModuleId(newModuleId);
             setSearchTerm('');
@@ -144,14 +85,41 @@ const JardenModule: React.FC = () => {
             case 'compostcorner': setModalOpen('addCompost'); break;
             case 'growinggrounds': setModalOpen('addGround'); break;
             case 'seasonaltips': setModalOpen('addTip'); break;
+            case 'calendar': setModalOpen('addEvent'); break;
             default: console.warn(`No "add new" action for module: ${activeModuleId}`);
         }
     };
+    
+    const handleItemSelection = useCallback((id: string, itemType: string) => {
+        setSelectedItemId(id);
+        const itemMap = {
+            'plant': plants.find(i => i.id === id),
+            'fertilizer': fertilizers.find(i => i.id === id),
+            'compost_method': compostingMethods.find(i => i.id === id),
+            'growing_ground': growingGrounds.find(g => g.id === id),
+            'seasonal_tip': seasonalTips.find(i => i.id === id),
+        };
+        const item = itemMap[itemType as keyof typeof itemMap];
+        const moduleMap = {
+            'plant': 'florapedia', 'fertilizer': 'nutribase', 'compost_method': 'compostcorner',
+            'growing_ground': 'growinggrounds', 'seasonal_tip': 'seasonaltips'
+        }
 
+        if (item && user) { // Only track recent views for logged-in users
+            const name = (item as any).name || (item as any).plant_identification_overview?.common_names[0] || (item as any).fertilizer_name || (item as any).method_name || (item as any).title;
+            const imageUrl = (item as any).display_image_url || (item as any).imageUrl || (item as any).data?.imageUrl || (item as any).images?.[0]?.url || null;
+            addRecentView(id, itemType as any, name, imageUrl, moduleMap[itemType as keyof typeof moduleMap] as ActiveModuleType);
+        }
+    }, [plants, fertilizers, compostingMethods, growingGrounds, seasonalTips, user]);
+    
     const handleAddItem = async <T, U>(
         item: T,
         addFn: (data: T, userId?: string) => Promise<U>
-    ) => {
+    ): Promise<U | void> => {
+        if (!user) {
+            setAppError("You must be logged in to add new items.");
+            return;
+        }
         setAppError(null);
         try {
             const newItem = await addFn(item, user?.id);
@@ -169,83 +137,94 @@ const JardenModule: React.FC = () => {
                     handleItemSelection((newItem as any).id, itemTypeString);
                 }
             }
+            return newItem;
         } catch (error) {
             setAppError(error instanceof Error ? error.message : "Failed to save item.");
             console.error(error);
+            throw error;
         }
     };
-    
-    const handleUpdateGrowingGround = async (groundId: string, updates: Partial<GrowingGround>) => {
-        const originalGrounds = JSON.parse(JSON.stringify(growingGrounds));
-        
-        setGrowingGrounds(produce(draft => {
-            const ground = draft.find(g => g.id === groundId);
-            if (ground) {
-                Object.assign(ground, updates);
-            }
-        }));
-
-        try {
-            const updatedGroundFromServer = await updateGrowingGround(groundId, updates);
-            setGrowingGrounds(produce(draft => {
-                const index = draft.findIndex(g => g.id === groundId);
-                if (index !== -1) draft[index] = updatedGroundFromServer;
-            }));
-        } catch (error) {
-            setAppError(error instanceof Error ? error.message : "Failed to update ground details.");
-            setGrowingGrounds(originalGrounds);
-        }
-    };
-
-
-    const handleDeleteGrowingGround = async (groundId: string) => {
-        const originalGrounds = JSON.parse(JSON.stringify(growingGrounds));
-        setGrowingGrounds(prev => prev.filter(g => g.id !== groundId));
-        setSelectedItemId(null);
-
-        try {
-            await deleteGrowingGround(groundId);
-        } catch (error) {
-             setAppError(error instanceof Error ? error.message : "Failed to delete growing ground.");
-             setGrowingGrounds(originalGrounds);
-        }
-    }
-
-
-    const handleAddPlant = (plantInput: PlantInput) => handleAddItem(createDefaultPlantStructureInternal(plantInput), addPlant);
-    const handleAddFertilizer = (fertilizerInput: FertilizerInput) => handleAddItem(fertilizerInput, addFertilizer);
-    const handleAddCompostMethod = (methodInput: CompostingMethodInput) => handleAddItem(methodInput, addCompostingMethod);
-    const handleAddGrowingGround = (groundInput: GrowingGroundInput) => handleAddItem(groundInput, addGrowingGround);
-    const handleAddSeasonalTip = (tipInput: SeasonalTipInput) => handleAddItem(tipInput, addSeasonalTip);
-
-    const handleUpdatePlant = (plantId: string, updates: Partial<Plant>) => handleUpdateItem(plantId, updates, updatePlant);
-    const handleUpdateFertilizer = (id: string, updates: Partial<Fertilizer>) => handleUpdateItem(id, updates, updateFertilizer);
-    const handleUpdateCompostMethod = (id: string, updates: Partial<CompostingMethod>) => handleUpdateItem(id, updates, updateCompostingMethod);
-    const handleUpdateSeasonalTip = (id: string, updates: Partial<SeasonalTipInput>) => handleUpdateItem(id, updates, updateSeasonalTip);
     
     const handleUpdateItem = async <T, U extends { id: string }>(
         id: string,
         updates: T,
         updateFn: (id: string, updates: T) => Promise<U>
     ) => {
+        if (!user) {
+            setAppError("You must be logged in to update items.");
+            return;
+        }
         setAppError(null);
         try {
-            const updatedItem = await updateFn(id, updates);
-            // Instead of full refresh, just update the specific item in state
-            if (activeModuleId === 'florapedia') setPlants(prev => prev.map(p => p.id === id ? updatedItem as unknown as Plant : p));
-            if (activeModuleId === 'nutribase') setFertilizers(prev => prev.map(f => f.id === id ? updatedItem as unknown as Fertilizer : f));
-            if (activeModuleId === 'compostcorner') setCompostingMethods(prev => prev.map(c => c.id === id ? updatedItem as unknown as CompostingMethod : c));
-            if (activeModuleId === 'seasonaltips') setSeasonalTips(prev => prev.map(t => t.id === id ? updatedItem as unknown as SeasonalTip : t));
+            await updateFn(id, updates);
+            await refreshAllData(); // Refresh after update
         } catch (error) {
             setAppError(error instanceof Error ? error.message : "Failed to update item.");
             console.error(error);
             await refreshAllData(); // Fallback to refresh on error
         }
     };
+    
+    // Re-bind handlers to use the generic update function
+    const handleUpdatePlant = (plantId: string, updates: Partial<Plant>) => handleUpdateItem(plantId, updates, updatePlant);
+    const handleUpdateFertilizer = (id: string, updates: Partial<Fertilizer>) => handleUpdateItem(id, updates, updateFertilizer);
+    const handleUpdateCompostMethod = (id: string, updates: Partial<CompostingMethod>) => handleUpdateItem(id, updates, updateCompostingMethod);
+    const handleUpdateGrowingGround = (id: string, updates: Partial<GrowingGround>) => handleUpdateItem(id, updates, updateGrowingGround);
+    const handleUpdateSeasonalTip = (id: string, updates: Partial<SeasonalTipInput>) => handleUpdateItem(id, updates, updateSeasonalTip);
+    const handleUpdateCalendarEvent = (id: string, updates: Partial<CalendarEvent>) => handleUpdateItem(id, updates, updateCalendarEvent);
+
+    const handleDeleteGrowingGround = async (groundId: string) => {
+        try {
+            await deleteGrowingGround(groundId);
+            setSelectedItemId(null);
+            await refreshAllData();
+        } catch (error) {
+             setAppError(error instanceof Error ? error.message : "Failed to delete growing ground.");
+        }
+    }
+    
+    const handleDeleteCalendarEvent = async (eventId: string) => {
+        try {
+            await deleteCalendarEvent(eventId);
+            await refreshAllData();
+        } catch (error) {
+            setAppError(error instanceof Error ? error.message : "Failed to delete event.");
+        }
+    }
 
 
-    const handlePopulateWithStandardAI = async (plantId: string) => {
-        // Logic for standard AI population
+    const handleAddPlant = (plantInput: PlantInput) => handleAddItem(createDefaultPlantStructureInternal(plantInput) as any, addPlant as any);
+    const handleAddFertilizer = (fertilizerInput: FertilizerInput) => handleAddItem(fertilizerInput, addFertilizer);
+    const handleAddCompostMethod = (methodInput: CompostingMethodInput) => handleAddItem(methodInput, addCompostingMethod);
+    const handleAddGrowingGround = (groundInput: GrowingGroundInput) => handleAddItem(groundInput, addGrowingGround);
+    const handleAddSeasonalTip = (tipInput: SeasonalTipInput) => handleAddItem(tipInput, addSeasonalTip);
+    const handleAddCalendarEvent = (eventData: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'is_completed' | 'event_types'>, groundId?: string) => {
+        if (!user) { setAppError("Must be logged in to add events."); return Promise.reject("User not logged in"); }
+        const fullEventData = { ...eventData, user_id: user.id };
+        return handleAddItem({ event: fullEventData, groundId }, addCalendarEvent as any);
+    }
+
+    const onPopulateWithStandardAI = async (plantId: string) => {
+        const plant = plants.find(p => p.id === plantId);
+        if (!plant) {
+            setAppError("Could not find the specified plant to update.");
+            return;
+        }
+    
+        setIsLoadingAi(true);
+        setAppError(null);
+    
+        try {
+            const plantIdentifier = plant.plant_identification_overview.common_names?.[0] || plant.plant_identification_overview.latin_name_scientific_name;
+            const fullAiData = await getAiAssistedDataForPlant(plantIdentifier, plant);
+            
+            await handleUpdatePlant(plantId, fullAiData);
+        } catch (err) {
+            setAppError(err instanceof Error ? err.message : "Failed to populate plant data with AI.");
+            console.error("AI Population Error:", err);
+        } finally {
+            setIsLoadingAi(false);
+        }
     };
 
     const handleCustomAiPrompt = async (prompt: string) => {
@@ -267,7 +246,11 @@ const JardenModule: React.FC = () => {
     };
 
     const handleUpdateWeatherPreference = async (preference: WeatherLocationPreference) => {
-        if (!profile) return;
+        if (!profile || !user) {
+            localStorage.setItem('jardenWeatherPreference', JSON.stringify(preference));
+            setModalOpen(null);
+            return;
+        };
         try {
             await updateProfileData({ preferences: { ...profile.preferences, weather: preference } });
         } catch (err) {
@@ -276,137 +259,148 @@ const JardenModule: React.FC = () => {
             setModalOpen(null);
         }
     };
-
-    const handleAddPlantToGround = async (data: { plantId?: string; newPlantInput?: PlantInput; quantity: number; datePlanted: string; notes?: string; status: any }) => {
+    
+    const handleAddPlantToGround = async (data: { plantId?: string; newPlantInput?: PlantInput; quantity: number; datePlanted: string; notes?: string; status: PlantStage }) => {
         if (!contextualGroundId) return;
-
         let plantIdToAdd = data.plantId;
         if (data.newPlantInput) {
-            const newPlant = await addPlant(createDefaultPlantStructureInternal(data.newPlantInput));
-            await refreshAllData(); // Refresh to get the new plant in the main list
-            plantIdToAdd = newPlant.id;
+            await handleAddItem(createDefaultPlantStructureInternal(data.newPlantInput) as any, addPlant as any);
+            const addedPlant = plants.find(p => p.plant_identification_overview.common_names[0] === data.newPlantInput?.common_name);
+            plantIdToAdd = addedPlant?.id;
         }
         if (!plantIdToAdd) return;
-
         setModalOpen(null);
-
-        const originalGrounds = JSON.parse(JSON.stringify(growingGrounds));
-        const ground = originalGrounds.find((g: GrowingGround) => g.id === contextualGroundId);
+        const ground = growingGrounds.find(g => g.id === contextualGroundId);
         if (!ground) return;
-
-        const newPlantForGround = { plantId: plantIdToAdd, quantity: data.quantity, datePlanted: data.datePlanted, notes: data.notes, status: data.status };
+        const newPlantForGround: GrowingGroundPlant = { 
+            plantId: plantIdToAdd, 
+            quantity: data.quantity, 
+            datePlanted: data.datePlanted, 
+            notes: data.notes, 
+            stageLog: [{ stage: data.status, date: data.datePlanted }]
+        };
         const updatedPlants = [...(ground.plants || []), newPlantForGround];
-
-        handleUpdateGrowingGround(contextualGroundId, { plants: updatedPlants });
+        handleUpdateGrowingGround(contextualGroundId, { ...ground, plants: updatedPlants });
     };
 
     const handleAddLogEntry = async (logEntry: Omit<GroundLogEntry, 'id'>) => {
         if (!contextualGroundId) return;
-        const originalGrounds = JSON.parse(JSON.stringify(growingGrounds));
-        const ground = originalGrounds.find((g: GrowingGround) => g.id === contextualGroundId);
+        const ground = growingGrounds.find(g => g.id === contextualGroundId);
         if (!ground) return;
-
         const newLog = { ...logEntry, id: crypto.randomUUID() };
         const updatedLogs = [newLog, ...(ground.logs || [])];
-        
         setModalOpen(null);
-        handleUpdateGrowingGround(contextualGroundId, { logs: updatedLogs });
+        handleUpdateGrowingGround(contextualGroundId, { ...ground, logs: updatedLogs });
     };
-
-    const handleAddGroundTask = async (taskData: Omit<GroundCalendarTask, 'id' | 'status'>) => {
-        if (!contextualGroundId) return;
-        const originalGrounds = JSON.parse(JSON.stringify(growingGrounds));
-        const ground = originalGrounds.find((g: GrowingGround) => g.id === contextualGroundId);
-        if (!ground) return;
-
-        const newTask = { ...taskData, id: crypto.randomUUID(), status: 'Pending' as const };
-        const updatedTasks = [...(ground.calendarTasks || []), newTask];
-        
-        setModalOpen(null);
-        handleUpdateGrowingGround(contextualGroundId, { calendarTasks: updatedTasks });
-    };
-
+    
     const handleAiGenerateGroundTasks = async (groundId: string) => {
         const ground = growingGrounds.find(g => g.id === groundId);
-        if (!ground || ground.plants.length === 0) {
-            setAppError("Cannot generate tasks for a ground with no plants.");
+        if (!ground || !user) {
+            setAppError("Could not find the specified growing ground or user not logged in.");
             return;
         }
+    
         setIsLoadingAiForGroundTasks(true);
+        setAppError(null);
+    
         try {
-            const plantDetails = ground.plants.map(p => {
-                const plantInfo = plants.find(pl => pl.id === p.plantId);
-                return plantInfo?.plant_identification_overview.common_names[0] || 'unknown plant';
-            }).join(', ');
-
-            const suggestedTasks = await generateGroundTasksWithAi(ground.name, plantDetails);
-            const newTasks: GroundCalendarTask[] = suggestedTasks.map(task => ({ ...task, id: crypto.randomUUID(), status: 'Pending' }));
+            const plantDetailsForPrompt = ground.plants
+                .map(p => {
+                    const plantInfo = plants.find(pl => pl.id === p.plantId);
+                    const lastStageLog = p.stageLog && p.stageLog.length > 0 ? p.stageLog[p.stageLog.length - 1] : null;
+                    return {
+                        plantName: plantInfo?.plant_identification_overview.common_names[0] || 'Unknown Plant',
+                        datePlanted: p.datePlanted,
+                        currentStage: lastStageLog?.stage || 'N/A',
+                        stageUpdatedAt: lastStageLog?.date || 'N/A'
+                    };
+                })
+                .filter(p => p.plantName !== 'Unknown Plant');
+    
+            if (plantDetailsForPrompt.length === 0) {
+                setAppError("Add some plants to the ground before generating tasks.");
+                setIsLoadingAiForGroundTasks(false);
+                return;
+            }
+    
+            const aiTasks = await generateGroundTasksWithAi(ground.name, plantDetailsForPrompt, eventTypes);
             
-            handleUpdateGrowingGround(groundId, { calendarTasks: [...(ground.calendarTasks || []), ...newTasks] });
-
+            for (const task of aiTasks) {
+                 // Find event type with case-insensitive match as a fallback
+                const eventType = eventTypes.find(et => et.name.toLowerCase() === task.actionType.toLowerCase()) || eventTypes.find(et => et.name === 'Other');
+    
+                // Robust date parsing, assuming YYYY-MM-DD from AI. Treats it as a local date.
+                const parsedDate = new Date(`${task.dueDate}T00:00:00`);
+                if (isNaN(parsedDate.getTime())) {
+                    console.warn(`AI returned an invalid date format: "${task.dueDate}". Skipping task: "${task.description}"`);
+                    continue; // Skip this task if date is invalid
+                }
+    
+                const eventData: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'is_completed' | 'event_types'> = {
+                    title: task.description,
+                    description: `AI-generated task for ${ground.name}`,
+                    start_date: parsedDate.toISOString(),
+                    end_date: null,
+                    event_type_id: eventType?.id || null, // Fallback to Other if still not found
+                    is_recurring: false,
+                    recurrence_rule: null,
+                    related_module: 'growing_grounds',
+                    related_entry_id: ground.id
+                };
+                await addCalendarEvent({ event: { ...eventData, user_id: user.id }, groundId: ground.id });
+            }
+            await refreshAllData();
+    
         } catch (err) {
-            setAppError(err instanceof Error ? err.message : "AI task generation failed.");
+            setAppError(err instanceof Error ? err.message : "Failed to generate AI tasks for the ground.");
+            console.error(err);
         } finally {
             setIsLoadingAiForGroundTasks(false);
         }
     };
 
-    const handleUpdateGroundTask = (groundId: string, taskId: string, updates: Partial<GroundCalendarTask>) => {
-        const ground = growingGrounds.find(g => g.id === groundId);
-        if (!ground) return;
-
-        const updatedTasks = (ground.calendarTasks || []).map(task => 
-            task.id === taskId ? { ...task, ...updates } : task
-        );
-        handleUpdateGrowingGround(groundId, { calendarTasks: updatedTasks });
-    };
-
-    const handleDeleteGroundTask = (groundId: string, taskId: string) => {
-        const ground = growingGrounds.find(g => g.id === groundId);
-        if (!ground) return;
-        const updatedTasks = (ground.calendarTasks || []).filter(task => task.id !== taskId);
-        handleUpdateGrowingGround(groundId, { calendarTasks: updatedTasks });
-    };
-
-    const handleItemSelection = useCallback((id: string, itemType: string) => {
-        setSelectedItemId(id);
-        const itemMap = {
-            'plant': plants.find(i => i.id === id),
-            'fertilizer': fertilizers.find(i => i.id === id),
-            'compost_method': compostingMethods.find(i => i.id === id),
-            'growing_ground': growingGrounds.find(i => i.id === id),
-            'seasonal_tip': seasonalTips.find(i => i.id === id),
-        };
-        const item = itemMap[itemType as keyof typeof itemMap];
-        const moduleMap = {
-            'plant': 'florapedia', 'fertilizer': 'nutribase', 'compost_method': 'compostcorner',
-            'growing_ground': 'growinggrounds', 'seasonal_tip': 'seasonaltips'
-        }
-
-        if (item) {
-            const name = (item as any).name || (item as any).plant_identification_overview?.common_names[0] || (item as any).fertilizer_name || (item as any).method_name || (item as any).title;
-            const imageUrl = (item as any).display_image_url || (item as any).data?.imageUrl || (item as any).images?.[0]?.url || null;
-            addRecentView(id, itemType as any, name, imageUrl, moduleMap[itemType as keyof typeof moduleMap] as ActiveModuleType);
-        }
-    }, [plants, fertilizers, compostingMethods, growingGrounds, seasonalTips]);
-
     const handleNavigateToRecentItem = (item: RecentViewItem) => {
         handleModuleNavigation(item.item_module_id);
         handleItemSelection(item.item_id, item.item_type);
     };
+    
+    const handleSavePlantStage = async (plantId: string, data: { newStage: PlantStage, comment?: string, photoBase64?: string | null }) => {
+        const groundWithPlant = growingGrounds.find(g => g.plants.some(p => p.plantId === plantId));
+        if (!groundWithPlant) return;
+        
+        const updatedGround = produce(groundWithPlant, draft => {
+            const plantIndex = draft.plants.findIndex(p => p.plantId === plantId);
+            if (plantIndex > -1) {
+                draft.plants[plantIndex].stageLog.push({ stage: data.newStage, date: new Date().toISOString().split('T')[0] });
+            }
+            if (data.comment || data.photoBase64) {
+                const plantInfo = plants.find(pl => pl.id === plantId);
+                draft.logs.unshift({
+                    id: crypto.randomUUID(),
+                    timestamp: new Date().toISOString(),
+                    actionType: 'Stage Update',
+                    description: `Stage for ${plantInfo?.plant_identification_overview.common_names[0] || 'plant'} updated to ${data.newStage}. ${data.comment || ''}`.trim(),
+                    relatedPlantIds: [plantId],
+                    photoUrls: data.photoBase64 ? [data.photoBase64] : undefined,
+                    notes: data.comment
+                });
+            }
+        });
 
-    const handleLoginSuccess = () => {
-        refreshAllData(true);
+        await handleUpdateGrowingGround(groundWithPlant.id, updatedGround);
+        setModalOpen(null);
+        setPlantToUpdate(null);
     };
 
-    if (authLoading) {
-        return <div className="w-full h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900"><LoadingSpinner size="lg" /></div>;
-    }
-    if (!session || !user) {
-        return <AuthPage onLoginSuccess={handleLoginSuccess} />;
-    }
+    const plantInfoForModal = plantToUpdate ? plants.find(p => p.id === plantToUpdate.plantId) : null;
+
+
     if (isDataLoading) {
         return <div className="w-full h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900"><LoadingSpinner size="lg" /><p className="ml-4 text-slate-600 dark:text-slate-300">Loading your Jarden...</p></div>;
+    }
+
+    if (!user && (activeModuleId === 'growinggrounds' || activeModuleId === 'calendar' || activeModuleId === 'profile' || activeModuleId === 'settings')) {
+        return <AuthPage onLoginSuccess={() => { /* AuthContext handles re-render */ }} />;
     }
 
     return (
@@ -425,6 +419,8 @@ const JardenModule: React.FC = () => {
                 growingGrounds={growingGrounds}
                 seasonalTips={seasonalTips}
                 seasonalTipListItems={seasonalTipListItems}
+                eventTypes={eventTypes}
+                calendarEvents={calendarEvents}
                 recentViews={recentViews}
                 onItemSelect={handleItemSelection}
                 selectedItemId={selectedItemId}
@@ -434,7 +430,7 @@ const JardenModule: React.FC = () => {
                 isLoadingAi={isLoadingAi}
                 setIsLoadingAi={setIsLoadingAi}
                 onUpdatePlant={handleUpdatePlant}
-                onPopulateWithStandardAI={handlePopulateWithStandardAI}
+                onPopulateWithStandardAI={onPopulateWithStandardAI}
                 onOpenCustomAiPromptModal={(data) => { setCustomAiModalData(data); setModalOpen('customAiPrompt'); }}
                 onUpdateFertilizer={handleUpdateFertilizer}
                 onUpdateCompostingMethod={handleUpdateCompostMethod}
@@ -443,11 +439,11 @@ const JardenModule: React.FC = () => {
                 onUpdateSeasonalTip={handleUpdateSeasonalTip}
                 onOpenAddPlantToGroundModal={(groundId) => { setContextualGroundId(groundId); setModalOpen('addPlantToGround'); }}
                 onOpenAddLogEntryModal={(groundId) => { setContextualGroundId(groundId); setModalOpen('addLogEntry'); }}
-                onOpenAddGroundCalendarTaskModal={(groundId) => { setContextualGroundId(groundId); setModalOpen('addGroundTask'); }}
+                onOpenAddEventForGround={(groundId) => { setContextualGroundId(groundId); setModalOpen('addEvent'); }}
                 onAiGenerateGroundTasks={handleAiGenerateGroundTasks}
                 isLoadingAiForGroundTasks={isLoadingAiForGroundTasks}
-                onUpdateGroundTask={handleUpdateGroundTask}
-                onDeleteGroundTask={handleDeleteGroundTask}
+                onUpdateCalendarEvent={handleUpdateCalendarEvent}
+                onDeleteCalendarEvent={handleDeleteCalendarEvent}
                 weatherLocationPreference={profile?.preferences?.weather || null}
                 setIsDefineLocationModalOpen={() => setModalOpen('defineLocation')}
                 onNavigateToRecentItem={handleNavigateToRecentItem}
@@ -458,13 +454,39 @@ const JardenModule: React.FC = () => {
             <AddNewCompostingMethodModal isOpen={modalOpen === 'addCompost'} onClose={() => setModalOpen(null)} onSave={handleAddCompostMethod} moduleConfig={MODULES.find(m => m.id === 'compostcorner')!} />
             <AddNewGrowingGroundModal isOpen={modalOpen === 'addGround'} onClose={() => setModalOpen(null)} onSave={handleAddGrowingGround} moduleConfig={MODULES.find(m => m.id === 'growinggrounds')!} />
             <AddNewSeasonalTipModal isOpen={modalOpen === 'addTip'} onClose={() => setModalOpen(null)} onSave={handleAddSeasonalTip} moduleConfig={MODULES.find(m => m.id === 'seasonaltips')!} />
+            <AddCalendarEventModal isOpen={modalOpen === 'addEvent'} onClose={() => setModalOpen(null)} onSave={handleAddCalendarEvent} eventTypes={eventTypes} moduleConfig={MODULES.find(m => m.id === 'calendar')!} groundId={contextualGroundId || undefined} />
+
             <DefineLocationModal isOpen={modalOpen === 'defineLocation'} onClose={() => setModalOpen(null)} onPreferenceSelect={handleUpdateWeatherPreference} currentPreference={profile?.preferences?.weather || null} />
             {customAiModalData && <CustomAiPromptModal isOpen={modalOpen === 'customAiPrompt'} onClose={() => setModalOpen(null)} onExecutePrompt={handleCustomAiPrompt} isLoading={isLoadingAi} plantName={customAiModalData.plantName} sectionKey={customAiModalData.sectionKey} moduleConfig={MODULES.find(m => m.id === 'florapedia')!} />}
-            {contextualGroundId && <AddPlantToGroundModal isOpen={modalOpen === 'addPlantToGround'} onClose={() => setModalOpen(null)} onSave={handleAddPlantToGround} groundId={contextualGroundId} existingPlants={plants} onAddNewPlant={() => { setModalOpen(null); setTimeout(() => setModalOpen('addPlant'), 100); }} moduleConfig={MODULES.find(m => m.id === 'growinggrounds')!} />}
-            {contextualGroundId && <AddLogEntryModal isOpen={modalOpen === 'addLogEntry'} onClose={() => setModalOpen(null)} onSave={handleAddLogEntry} groundId={contextualGroundId} moduleConfig={MODULES.find(m => m.id === 'growinggrounds')!} />}
-            {contextualGroundId && <AddGroundCalendarTaskModal isOpen={modalOpen === 'addGroundTask'} onClose={() => setModalOpen(null)} onSave={handleAddGroundTask} groundId={contextualGroundId} plantsInGround={growingGrounds.find(g => g.id === contextualGroundId)?.plants || []} allPlants={plants} moduleConfig={MODULES.find(m => m.id === 'growinggrounds')!} />}
+            {contextualGroundId && user && <AddPlantToGroundModal isOpen={modalOpen === 'addPlantToGround'} onClose={() => setModalOpen(null)} onSave={handleAddPlantToGround} groundId={contextualGroundId} existingPlants={plants} onAddNewPlant={() => { setModalOpen(null); setTimeout(() => setModalOpen('addPlant'), 100); }} moduleConfig={MODULES.find(m => m.id === 'growinggrounds')!} />}
+            {contextualGroundId && user && <AddLogEntryModal isOpen={modalOpen === 'addLogEntry'} onClose={() => setModalOpen(null)} onSave={handleAddLogEntry} groundId={contextualGroundId} moduleConfig={MODULES.find(m => m.id === 'growinggrounds')!} />}
+            {plantToUpdate && plantInfoForModal && (
+                 <UpdatePlantStageModal
+                    isOpen={true} // Controlled by plantToUpdate state now
+                    onClose={() => setPlantToUpdate(null)}
+                    onSave={handleSavePlantStage}
+                    plantInGround={plantToUpdate}
+                    plantInfo={plantInfoForModal}
+                    moduleConfig={MODULES.find(m => m.id === 'growinggrounds')!}
+                />
+            )}
         </>
     );
 };
 
-export default JardenModule;
+
+const JardenModuleWithProvider: React.FC = () => {
+    const { loading: authLoading } = useAuth();
+    
+    if (authLoading) {
+        return <div className="w-full h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900"><LoadingSpinner size="lg" /></div>;
+    }
+
+    return (
+        <JardenDataProvider>
+            <JardenModuleContent />
+        </JardenDataProvider>
+    );
+};
+
+export default JardenModuleWithProvider;

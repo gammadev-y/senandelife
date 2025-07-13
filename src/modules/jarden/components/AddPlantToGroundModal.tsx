@@ -1,22 +1,21 @@
 
+
+
 import React, { useState, useEffect } from 'react';
-import { Plant, PlantInput, GrowingGroundPlant } from '../types';
+import { Plant, PlantInput, GrowingGroundPlant, PlantStage } from '../types';
 import { XMarkIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { MODULES } from '../constants';
+import { MODULES, PLANT_STAGES } from '../constants';
 
 
 interface AddPlantToGroundModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: { plantId?: string; newPlantInput?: PlantInput; quantity: number; datePlanted: string; notes?: string; status: GrowingGroundPlant['status'] }) => void;
+  onSave: (data: { plantId?: string; newPlantInput?: PlantInput; quantity: number; datePlanted: string; notes?: string; status: PlantStage }) => void;
   groundId: string;
   existingPlants: Plant[];
   onAddNewPlant: () => void; 
   moduleConfig: typeof MODULES[0];
 }
-
-const PLANT_STATUSES: GrowingGroundPlant['status'][] = ['Planning', 'Seeded', 'Seedling', 'Vegetative', 'Flowering', 'Fruiting', 'Dormant', 'Harvested', 'Failed', 'Removed'];
-
 
 const AddPlantToGroundModal: React.FC<AddPlantToGroundModalProps> = ({ 
   isOpen, onClose, onSave, groundId, existingPlants, onAddNewPlant, moduleConfig
@@ -27,7 +26,7 @@ const AddPlantToGroundModal: React.FC<AddPlantToGroundModalProps> = ({
   const [quantity, setQuantity] = useState<number>(1);
   const [datePlanted, setDatePlanted] = useState(new Date().toISOString().slice(0, 10)); // YYYY-MM-DD
   const [notes, setNotes] = useState('');
-  const [status, setStatus] = useState<GrowingGroundPlant['status']>(PLANT_STATUSES[0]);
+  const [status, setStatus] = useState<PlantStage>(PLANT_STAGES[0]);
   const [error, setError] = useState<string | null>(null);
 
   // Use moduleConfig.baseColorClass for consistent theming
@@ -47,7 +46,7 @@ const AddPlantToGroundModal: React.FC<AddPlantToGroundModalProps> = ({
       setQuantity(1);
       setDatePlanted(new Date().toISOString().slice(0, 10));
       setNotes('');
-      setStatus(PLANT_STATUSES[0]);
+      setStatus(PLANT_STAGES[0]);
       setError(null);
       setMode('select'); // Default to select mode
     }
@@ -165,9 +164,9 @@ const AddPlantToGroundModal: React.FC<AddPlantToGroundModalProps> = ({
                         <input type="date" id="datePlanted" value={datePlanted} onChange={(e) => setDatePlanted(e.target.value)} className={`mt-1 ${inputBaseStyles}`} />
                     </div>
                     <div>
-                        <label htmlFor="plantStatus" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Status</label>
-                        <select id="plantStatus" value={status} onChange={(e) => setStatus(e.target.value as GrowingGroundPlant['status'])} className={`mt-1 ${inputBaseStyles} appearance-none`}>
-                            {PLANT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                        <label htmlFor="plantStatus" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Initial Stage</label>
+                        <select id="plantStatus" value={status} onChange={(e) => setStatus(e.target.value as PlantStage)} className={`mt-1 ${inputBaseStyles} appearance-none`}>
+                            {PLANT_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                     </div>
                     <div>

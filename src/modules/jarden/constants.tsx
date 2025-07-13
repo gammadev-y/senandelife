@@ -1,17 +1,19 @@
 
+
 import React from 'react';
 import {
-  ActiveModuleType, MonthAbbreviation, PlantCalendarTaskType, GroundLogActionType, GrowingGround,
+  ActiveModuleType, MonthAbbreviation, GroundLogActionType, GrowingGround, PlantStage, EventType, PlantCalendarTaskType,
 } from './types';
 import { 
     HomeIcon as HomeOutlineIcon, MagnifyingGlassIcon, MapIcon as MapOutlineIcon, 
     CalendarDaysIcon as CalendarOutlineIcon, BeakerIcon, CubeTransparentIcon, 
     CogIcon, BoltIcon, ArrowPathIcon, WrenchScrewdriverIcon, ArchiveBoxIcon, 
-    SparklesIcon as SparklesOutlineIcon, StarIcon, InboxStackIcon, LightBulbIcon as OutlineLightBulbIcon, 
+    SparklesIcon as SparklesOutlineIcon, StarIcon, InboxStackIcon, 
     InformationCircleIcon, AcademicCapIcon, PresentationChartLineIcon, UserCircleIcon,
     PaintBrushIcon, ScissorsIcon, CloudIcon, EyeIcon, ChatBubbleLeftEllipsisIcon,
     ShieldExclamationIcon, TrashIcon, CheckCircleIcon, ListBulletIcon, PlusCircleIcon,
-    ExclamationCircleIcon, AdjustmentsHorizontalIcon, ClockIcon, PaperAirplaneIcon, BookOpenIcon
+    ExclamationCircleIcon, AdjustmentsHorizontalIcon, ClockIcon, PaperAirplaneIcon, BookOpenIcon,
+    ClipboardDocumentListIcon, BugAntIcon, TagIcon
 } from '@heroicons/react/24/outline';
 import LeafIcon from './components/icons/LeafIcon';
 import LightBulbIcon from './components/icons/LightBulbIcon'; 
@@ -22,29 +24,45 @@ export const LOCAL_STORAGE_WEATHER_PREF_KEY = 'jardenWeatherPreference';
 
 export const MONTH_ABBREVIATIONS: MonthAbbreviation[] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-export const PLANT_CALENDAR_TASK_TYPES: PlantCalendarTaskType[] = [
-  'SowIndoors', 'SowOutdoors', 'Transplant', 'Germinate', 'Prune', 'Fertilize', 'Harvest', 'Maintenance', 'FlowerWatch', 'FruitWatch', 'SeedCollect', 'Other'
+
+export const EVENT_TYPES_SEED_DATA: Omit<EventType, 'id'>[] = [
+    { name: 'Pruning', icon_name: '✂️', color_code: '#b91c1c', description: 'Cutting back plants to encourage health and growth.' },
+    { name: 'Harvest', icon_name: '🧺', color_code: '#f97316', description: 'Gathering mature crops.' },
+    { name: 'Weeding', icon_name: '🌿', color_code: '#10b981', description: 'Removing unwanted plants.' },
+    { name: 'Soil Amendment', icon_name: '✨', color_code: '#8b5cf6', description: 'Improving soil quality with additives.' },
+    { name: 'Watering', icon_name: '💧', color_code: '#38bdf8', description: 'Providing water to plants.' },
+    { name: 'Observation', icon_name: '👀', color_code: '#2563eb', description: 'Watching for changes or issues.' },
+    { name: 'Fertilization', icon_name: '⚡️', color_code: '#ca8a04', description: 'Adding nutrients to the soil.' },
+    { name: 'Inspection', icon_name: '🧐', color_code: '#7c3aed', description: 'Closely examining plants for pests or diseases.' },
+    { name: 'Maintenance', icon_name: '🛠️', color_code: '#4b5563', description: 'General upkeep tasks.' },
+    { name: 'Planting', icon_name: '🌱', color_code: '#16a34a', description: 'Adding new plants to the garden.' },
+    { name: 'Pest Control', icon_name: '🐞', color_code: '#dc2626', description: 'Managing or eliminating harmful pests.' },
+    { name: 'Other', icon_name: '📝', color_code: '#9ca3af', description: 'Miscellaneous tasks.' },
 ];
 
+
 export const PLANT_TASK_TYPE_ICONS: Record<PlantCalendarTaskType, React.FC<React.SVGProps<SVGSVGElement>>> = {
-  SowIndoors: InboxStackIcon,
-  SowOutdoors: CloudIcon, 
+  SowIndoors: PlusCircleIcon,
+  SowOutdoors: PlusCircleIcon,
   Transplant: ArrowPathIcon,
-  Germinate: LightBulbIcon,
-  Prune: ScissorsIcon, 
+  Prune: ScissorsIcon,
   Fertilize: BoltIcon,
   Harvest: ArchiveBoxIcon,
-  Maintenance: CogIcon,
-  FlowerWatch: SparklesOutlineIcon,
-  FruitWatch: StarIcon,
+  Maintenance: WrenchScrewdriverIcon,
+  Germinate: SparklesOutlineIcon,
+  FlowerWatch: EyeIcon,
+  FruitWatch: EyeIcon,
   SeedCollect: InboxStackIcon,
   Other: InformationCircleIcon
 };
 
+
+export const PLANT_STAGES: PlantStage[] = ['Planning', 'Seeded', 'Seedling', 'Vegetative', 'Flowering', 'Fruiting', 'Dormant', 'Harvested', 'Failed', 'Removed'];
+
 export const GROUND_LOG_ACTION_TYPES: GroundLogActionType[] = [
   'Planting', 'Water', 'Fertilize', 'Prune', 'Trim', 'Weeding', 'Mulching', 'Maintenance',
   'Pest Control', 'Disease Management', 'Soil Amendment',
-  'Harvest', 'Observation', 'Other'
+  'Harvest', 'Observation', 'Stage Update', 'Inspection', 'Intervention', 'Other'
 ];
 
 export const GROUND_LOG_ACTION_TYPE_ICONS: Record<GroundLogActionType, React.FC<React.SVGProps<SVGSVGElement>>> = {
@@ -61,23 +79,12 @@ export const GROUND_LOG_ACTION_TYPE_ICONS: Record<GroundLogActionType, React.FC<
   'Soil Amendment': AdjustmentsHorizontalIcon, 
   Harvest: ArchiveBoxIcon,
   Observation: EyeIcon,
+  'Stage Update': ClipboardDocumentListIcon,
+  'Inspection': EyeIcon,
+  'Intervention': ShieldExclamationIcon,
   Other: InformationCircleIcon
 };
 
-export const PLANT_TO_GROUND_TASK_TYPE_MAP: Record<PlantCalendarTaskType, GroundLogActionType> = {
-  SowIndoors: 'Planting',
-  SowOutdoors: 'Planting',
-  Transplant: 'Planting',
-  Germinate: 'Observation',
-  Prune: 'Prune',
-  Fertilize: 'Fertilize',
-  Harvest: 'Harvest',
-  Maintenance: 'Maintenance',
-  FlowerWatch: 'Observation',
-  FruitWatch: 'Observation',
-  SeedCollect: 'Harvest',
-  Other: 'Other',
-};
 
 
 export const FERTILIZER_SECTION_LABELS: Record<string, string> = { 
@@ -152,7 +159,6 @@ export const GROWING_GROUND_LABELS: Record<string, string> = {
   areaDimensions: "Area Dimensions / Size",
   plants: "Plants in this Ground",
   logs: "Activity Log",
-  calendarTasks: "Calendar Tasks",
   customNotes: "Custom Notes",
   informationSources: "Information Sources (e.g., soil test results link)"
 };
@@ -164,7 +170,7 @@ export const GROUND_TYPES: GrowingGround['type'][] = [
 
 
 export const MODULES: {
-  id: ActiveModuleType | 'home' | 'profile'; 
+  id: ActiveModuleType | 'home' | 'profile' | 'settings'; 
   name: string;
   icon: React.FC<React.SVGProps<SVGSVGElement>>;
   baseColorClass: string; 

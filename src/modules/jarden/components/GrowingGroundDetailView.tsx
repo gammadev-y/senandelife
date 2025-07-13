@@ -1,9 +1,15 @@
 
 
 
+
+
+
+
+
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { GrowingGround, Plant, GroundLogEntry, GrowingGroundPlant, GroundCalendarTask } from '../types';
-import { GROWING_GROUND_LABELS, GROUND_LOG_ACTION_TYPE_ICONS, MODULES, GROUND_TYPES } from '../constants';
+import { produce } from 'immer';
+import { GrowingGround, Plant, GroundLogEntry, GrowingGroundPlant, PlantStage, CalendarEventViewModel } from '../types';
+import { GROWING_GROUND_LABELS, GROUND_LOG_ACTION_TYPE_ICONS, MODULES, GROUND_TYPES, PLANT_STAGES } from '../constants';
 import SectionCard from './SectionCard';
 import EditableText from './EditableText';
 import { SunIcon, BeakerIcon, ListBulletIcon, PlusIcon, PhotoIcon, CalendarDaysIcon, PencilIcon, SparklesIcon as OutlineSparklesIcon, CheckIcon, TrashIcon, ChevronLeftIcon, ChevronUpIcon, ChevronDownIcon, ArrowPathIcon, XMarkIcon, InformationCircleIcon, TagIcon, SquaresPlusIcon, ChartBarIcon, MapIcon, ChatBubbleBottomCenterTextIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
@@ -12,10 +18,10 @@ import LoadingSpinner from './LoadingSpinner';
 import { generateGroundImageWithAi } from '../services/geminiService';
 import GroundStockIcon from './icons/GroundStockIcon';
 import PlantStockIcon from './icons/PlantStockIcon';
-import { produce } from 'https://esm.sh/immer@10.0.3';
 import useImageDragAdjust from '../hooks/useImageDragAdjust';
 import { deepMerge } from '../utils/objectUtils';
 import ImageCarousel from './ImageCarousel';
+import UpdatePlantStageModal from './UpdatePlantStageModal';
 
 interface GrowingGroundDetailViewProps {
   ground: GrowingGround | null;
@@ -25,32 +31,36 @@ interface GrowingGroundDetailViewProps {
   plants: Plant[];
   onOpenAddLogEntryModal: (groundId: string) => void;
   onOpenAddPlantToGroundModal: (groundId: string) => void;
-  onOpenAddGroundCalendarTaskModal: (groundId: string) => void;
+  onOpenAddEventForGround: (groundId: string) => void;
   onAiGenerateGroundTasks: (groundId: string) => Promise<void>;
   isLoadingAiForGroundTasks: boolean;
-  onUpdateGroundTask: (groundId: string, taskId: string, updates: Partial<GroundCalendarTask>) => void;
-  onDeleteGroundTask: (groundId: string, taskId: string) => void;
+  onUpdateCalendarEvent: (eventId: string, updates: Partial<CalendarEventViewModel>) => void;
+  onDeleteCalendarEvent: (eventId: string) => void;
+  calendarEvents: CalendarEventViewModel[];
   moduleConfig: typeof MODULES[0];
   onDeselect?: () => void;
   isCompactView: boolean;
 }
 
-const PlantInGroundCard: React.FC<{ plantInGround: GrowingGroundPlant; allPlants: Plant[]; isEditing: boolean; onRemove: () => void; }> = ({ plantInGround, allPlants, isEditing, onRemove }) => {
+const PlantInGroundCard: React.FC<{ plantInGround: GrowingGroundPlant; allPlants: Plant[]; isEditing: boolean; onRemove: () => void; onUpdateStageClick: (plant: GrowingGroundPlant) => void; }> = ({ plantInGround, allPlants, isEditing, onRemove, onUpdateStageClick }) => {
     const plantInfo = allPlants.find(p => p.id === plantInGround.plantId);
     if (!plantInfo) return null;
+    const currentStage = plantInGround.stageLog?.[plantInGround.stageLog.length - 1]?.stage || 'N/A';
+
     return (
-        <div className="bg-slate-100 dark:bg-slate-700/50 rounded-lg p-3 flex items-start space-x-3 group/plant">
+        <div className="bg-slate-100 dark:bg-slate-700/50 rounded-lg p-3 flex items-start space-x-3 group/plant relative">
+            <button onClick={() => onUpdateStageClick(plantInGround)} className="absolute inset-0 z-10" aria-label={`Update stage for ${plantInfo.plant_identification_overview.common_names[0]}`}></button>
             <img src={plantInfo.display_image_url || undefined} onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden');}}  alt={plantInfo.plant_identification_overview.common_names[0]} className="w-16 h-16 rounded-md object-cover flex-shrink-0" />
             <div className={`w-16 h-16 rounded-md bg-slate-200 dark:bg-slate-600 items-center justify-center flex-shrink-0 hidden`}>
                 <PlantStockIcon className="w-10 h-10 text-slate-400"/>
             </div>
             <div className="flex-grow">
                 <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-100">{plantInfo.plant_identification_overview.common_names[0]}</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-300">Qty: {plantInGround.quantity} | Status: {plantInGround.status}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300">Qty: {plantInGround.quantity} | Stage: <span className="font-medium">{currentStage}</span></p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{plantInGround.notes}</p>
             </div>
              {isEditing && (
-                <button onClick={onRemove} className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full opacity-0 group-hover/plant:opacity-100 transition-opacity" aria-label={`Remove ${plantInfo.plant_identification_overview.common_names[0]}`}>
+                <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); onRemove(); }} className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full opacity-0 group-hover/plant:opacity-100 transition-opacity z-20" aria-label={`Remove ${plantInfo.plant_identification_overview.common_names[0]}`}>
                     <TrashIcon className="w-4 h-4"/>
                 </button>
             )}
@@ -61,8 +71,8 @@ const PlantInGroundCard: React.FC<{ plantInGround: GrowingGroundPlant; allPlants
 const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
   ground: initialGround, onUpdateGround, onDeleteGround, setAppError, plants,
   onOpenAddLogEntryModal, onOpenAddPlantToGroundModal,
-  onOpenAddGroundCalendarTaskModal, onAiGenerateGroundTasks, isLoadingAiForGroundTasks,
-  onUpdateGroundTask, onDeleteGroundTask, moduleConfig, onDeselect, isCompactView
+  onOpenAddEventForGround, onAiGenerateGroundTasks, isLoadingAiForGroundTasks,
+  onUpdateCalendarEvent, onDeleteCalendarEvent, calendarEvents, moduleConfig, onDeselect, isCompactView
 }) => {
   const heroImageInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -70,6 +80,7 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
   const [isLoadingAiImage, setIsLoadingAiImage] = useState(false);
   const [showTaskArchive, setShowTaskArchive] = useState(false);
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
+  const [plantToUpdate, setPlantToUpdate] = useState<GrowingGroundPlant | null>(null);
   
   const heroImageContainerRef = useRef<HTMLDivElement>(null);
   const currentImageObjectPositionY = (isEditing ? editedGroundData?.image_object_position_y : initialGround?.image_object_position_y) ?? 50;
@@ -171,21 +182,50 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
             if (draft.plants) {
                 draft.plants.splice(indexToRemove, 1);
             }
-            // If a plant was identified and removed, also remove its related tasks
-            if (plantIdToRemove && draft.calendarTasks) {
-                draft.calendarTasks = draft.calendarTasks.filter(task => 
-                    !task.relatedPlantIds?.includes(plantIdToRemove)
-                );
-            }
         }));
     }
   };
 
-  const handleTaskCheckboxChange = async (taskId: string, newStatus: GroundCalendarTask['status']) => {
+  const handleSavePlantStage = async (plantId: string, { newStage, comment, photoBase64 }: { newStage: PlantStage; comment?: string; photoBase64?: string | null; }) => {
+      if (!initialGround) return;
+  
+      const updatedGround = produce(initialGround, draft => {
+          const plantIndex = draft.plants.findIndex(p => p.plantId === plantId);
+          if (plantIndex > -1) {
+              const plantToUpdate = draft.plants[plantIndex];
+              if (!plantToUpdate.stageLog) {
+                  plantToUpdate.stageLog = [];
+              }
+              plantToUpdate.stageLog.push({ stage: newStage, date: new Date().toISOString().split('T')[0] });
+          }
+  
+          if (comment || photoBase64) {
+              if (!draft.logs) {
+                  draft.logs = [];
+              }
+              const plantInfo = plants.find(p => p.id === plantId);
+              const newLogEntry: GroundLogEntry = {
+                  id: crypto.randomUUID(),
+                  timestamp: new Date().toISOString(),
+                  actionType: 'Stage Update',
+                  description: `Stage for ${plantInfo?.plant_identification_overview.common_names[0] || 'plant'} updated to ${newStage}. ${comment || ''}`.trim(),
+                  relatedPlantIds: [plantId],
+                  photoUrls: photoBase64 ? [photoBase64] : undefined,
+                  notes: comment,
+              };
+              draft.logs.unshift(newLogEntry); // Add to the top of the logs
+          }
+      });
+  
+      await onUpdateGround(initialGround.id, updatedGround);
+      setPlantToUpdate(null); // Close modal
+  };
+
+  const handleTaskCheckboxChange = async (taskId: string, isCompleted: boolean) => {
     if (!initialGround) return;
     setUpdatingTaskId(taskId);
     try {
-      await onUpdateGroundTask(initialGround.id, taskId, { status: newStatus });
+      await onUpdateCalendarEvent(taskId, { is_completed: isCompleted });
     } catch (error) {
       console.error("Failed to update task status", error);
     } finally {
@@ -207,12 +247,16 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
   if (!groundForDisplay) return null; // Should not happen if initialGround exists
   
   const sortedLogs = [...(groundForDisplay.logs || [])].sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  const pendingTasks = (groundForDisplay.calendarTasks || []).filter(t => t.status !== 'Completed').sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-  const completedTasks = (groundForDisplay.calendarTasks || []).filter(t => t.status === 'Completed').sort((a,b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+  
+  const groundCalendarEvents = calendarEvents.filter(event => event.related_entry_id === groundForDisplay.id || event.ground_ids?.includes(groundForDisplay.id));
+  const pendingTasks = groundCalendarEvents.filter(t => t.status !== 'Completed').sort((a,b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+  const completedTasks = groundCalendarEvents.filter(t => t.status === 'Completed').sort((a,b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
   
   const photoGalleryImages = sortedLogs
     .flatMap(log => log.photoUrls || [])
     .filter(url => typeof url === 'string' && url.length > 0 && !url.startsWith('uploading'));
+
+  const plantToUpdateInfo = plantToUpdate ? plants.find(p => p.id === plantToUpdate.plantId) : null;
 
 
   return (
@@ -268,6 +312,7 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
                 <EditableText currentValue={groundForDisplay.areaDimensions || ''} onSave={val => handleDataFieldChange('areaDimensions', val)} labelText={GROWING_GROUND_LABELS.areaDimensions} disabled={!isEditing} textSize="text-sm" />
             </div>
         </SectionCard>
+        
         <SectionCard title="Environment" icon={SunIcon}>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <EditableText currentValue={String(groundForDisplay.lightHoursMorning)} onSave={val => handleDataFieldChange('lightHoursMorning', Number(val))} labelText={GROWING_GROUND_LABELS.lightHoursMorning} disabled={!isEditing} textSize="text-sm" />
@@ -276,13 +321,64 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
                 <EditableText currentValue={groundForDisplay.customSoilDescription || ''} onSave={val => handleDataFieldChange('customSoilDescription', val)} labelText={GROWING_GROUND_LABELS.customSoilDescription} textarea disabled={!isEditing} textSize="text-sm" />
             </div>
         </SectionCard>
-
+        
         <SectionCard title="Plants in this Ground" icon={SquaresPlusIcon} actionButton={<button type="button" onClick={() => onOpenAddPlantToGroundModal(initialGround.id)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700"><PlusIcon className="w-5 h-5"/></button>}>
             {(groundForDisplay.plants || []).length > 0 ? (
-                <div className="space-y-3">{(groundForDisplay.plants || []).map((p, i) => <PlantInGroundCard key={p.plantId + i} plantInGround={p} allPlants={plants} isEditing={isEditing} onRemove={() => handleRemovePlantFromGround(i)} />)}</div>
+                <div className="space-y-3">{(groundForDisplay.plants || []).map((p, i) => <PlantInGroundCard key={p.plantId + i} plantInGround={p} allPlants={plants} isEditing={isEditing} onRemove={() => handleRemovePlantFromGround(i)} onUpdateStageClick={() => setPlantToUpdate(p)} />)}</div>
             ) : (<p className="text-slate-500 dark:text-slate-400 text-sm italic">No plants added yet.</p>)}
         </SectionCard>
-
+        
+        <SectionCard title="Calendar Tasks" icon={CalendarDaysIcon} actionButton={
+            <div className="flex items-center space-x-2">
+                <button type="button" onClick={() => onAiGenerateGroundTasks(initialGround.id)} disabled={isLoadingAiForGroundTasks} className={`p-1.5 rounded-full text-sky-500 hover:bg-sky-100 dark:hover:bg-sky-800`}>
+                    {isLoadingAiForGroundTasks ? <LoadingSpinner size="sm" color="text-sky-500" /> : <OutlineSparklesIcon className="w-5 h-5"/>}
+                </button>
+                <button type="button" onClick={() => onOpenAddEventForGround(initialGround.id)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700"><PlusIcon className="w-5 h-5"/></button>
+            </div>}>
+             <ul className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar pr-2">
+                {pendingTasks.length > 0 ? pendingTasks.map(task => {
+                    const isUpdatingThisTask = updatingTaskId === task.id;
+                    return (
+                        <li key={task.id} className="flex items-start p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+                           <div className="flex items-center pt-0.5">
+                                <input type="checkbox" checked={task.is_completed} onChange={(e) => handleTaskCheckboxChange(task.id, e.target.checked)} disabled={isUpdatingThisTask} className="h-4 w-4 rounded border-slate-300 dark:border-slate-500 text-emerald-600 focus:ring-emerald-500 disabled:opacity-50" />
+                                {isUpdatingThisTask 
+                                    ? <LoadingSpinner size="sm" color="text-emerald-500" /> 
+                                    : <span className="w-5 h-5 ml-3 mr-3 text-lg flex items-center justify-center flex-shrink-0">{task.event_types?.icon_name || '📝'}</span>
+                                }
+                           </div>
+                            <div className="flex-grow">
+                                <p className={`font-semibold text-sm ${task.is_completed ? 'line-through text-slate-500 dark:text-slate-400' : 'text-slate-800 dark:text-slate-100'}`}>{task.title}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{new Date(task.start_date).toLocaleDateString()}</p>
+                            </div>
+                            {isEditing && <button type="button" onClick={() => onDeleteCalendarEvent(task.id)} className="p-1 text-red-500 hover:bg-red-100 rounded-full"><TrashIcon className="w-4 h-4" /></button>}
+                        </li>
+                    );
+                }) : <p className="text-slate-500 dark:text-slate-400 text-sm italic">No pending tasks.</p>}
+            </ul>
+             {completedTasks.length > 0 && (
+                <div className="mt-4">
+                    <button type="button" onClick={() => setShowTaskArchive(!showTaskArchive)} className="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center">
+                        <ArchiveBoxIcon className="w-4 h-4 mr-1"/>
+                        {showTaskArchive ? 'Hide' : 'Show'} Archived Tasks ({completedTasks.length})
+                    </button>
+                    {showTaskArchive && (
+                        <ul className="space-y-3 mt-2 max-h-60 overflow-y-auto custom-scrollbar pr-2 border-t border-slate-200 dark:border-slate-700 pt-3">
+                            {completedTasks.map(task => (
+                                <li key={task.id} className="flex items-start p-2 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg opacity-70">
+                                    <input type="checkbox" checked={true} onChange={(e) => handleTaskCheckboxChange(task.id, e.target.checked)} className="h-4 w-4 rounded border-slate-300 dark:border-slate-500 text-emerald-600 focus:ring-emerald-500 mt-0.5" />
+                                    <div className="ml-3 flex-grow">
+                                        <p className="font-medium text-sm line-through text-slate-500 dark:text-slate-400">{task.title}</p>
+                                        <p className="text-xs text-slate-400 dark:text-slate-500">Completed: {new Date(task.start_date).toLocaleDateString()}</p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+             )}
+        </SectionCard>
+        
         <SectionCard title="Activity Log" icon={ChartBarIcon} actionButton={<button type="button" onClick={() => onOpenAddLogEntryModal(initialGround.id)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700"><PlusIcon className="w-5 h-5"/></button>}>
             <ul className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar pr-2">
                 {sortedLogs.length > 0 ? sortedLogs.map(log => {
@@ -306,62 +402,24 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
                 <ImageCarousel images={photoGalleryImages.map(url => ({ url, alt: 'Activity log image' }))} />
             </SectionCard>
         )}
-
-         <SectionCard title="Calendar Tasks" icon={CalendarDaysIcon} actionButton={
-            <div className="flex items-center space-x-2">
-                 <button type="button" onClick={() => onAiGenerateGroundTasks(initialGround.id)} disabled={isLoadingAiForGroundTasks} className={`p-1.5 rounded-full text-sky-500 hover:bg-sky-100 dark:hover:bg-sky-800`}><OutlineSparklesIcon className="w-5 h-5"/></button>
-                 <button type="button" onClick={() => onOpenAddGroundCalendarTaskModal(initialGround.id)} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700"><PlusIcon className="w-5 h-5"/></button>
-            </div>}>
-             <ul className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar pr-2">
-                {pendingTasks.length > 0 ? pendingTasks.map(task => {
-                    const TaskIcon = GROUND_LOG_ACTION_TYPE_ICONS[task.actionType] || TagIcon;
-                    const isUpdatingThisTask = updatingTaskId === task.id;
-                    return (
-                        <li key={task.id} className="flex items-start p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
-                           <div className="flex items-center pt-0.5">
-                                <input type="checkbox" checked={task.status === 'Completed'} onChange={(e) => handleTaskCheckboxChange(task.id, e.target.checked ? 'Completed' : 'Pending')} disabled={isUpdatingThisTask} className="h-4 w-4 rounded border-slate-300 dark:border-slate-500 text-emerald-600 focus:ring-emerald-500 disabled:opacity-50" />
-                                {isUpdatingThisTask 
-                                    ? <LoadingSpinner size="sm" color="text-emerald-500" /> 
-                                    : <TaskIcon className={`w-5 h-5 ml-3 mr-3 text-${moduleConfig.baseColorClass}-600 dark:text-${moduleConfig.baseColorClass}-400 flex-shrink-0`}/>
-                                }
-                           </div>
-                            <div className="flex-grow">
-                                <p className={`font-semibold text-sm ${task.status === 'Completed' ? 'line-through text-slate-500 dark:text-slate-400' : 'text-slate-800 dark:text-slate-100'}`}>{task.description}</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{new Date(task.dueDate + "T00:00:00").toLocaleDateString()}</p>
-                            </div>
-                            {isEditing && <button type="button" onClick={() => onDeleteGroundTask(initialGround.id, task.id)} className="p-1 text-red-500 hover:bg-red-100 rounded-full"><TrashIcon className="w-4 h-4" /></button>}
-                        </li>
-                    );
-                }) : <p className="text-slate-500 dark:text-slate-400 text-sm italic">No pending tasks.</p>}
-            </ul>
-             {completedTasks.length > 0 && (
-                <div className="mt-4">
-                    <button type="button" onClick={() => setShowTaskArchive(!showTaskArchive)} className="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center">
-                        <ArchiveBoxIcon className="w-4 h-4 mr-1"/>
-                        {showTaskArchive ? 'Hide' : 'Show'} Archived Tasks ({completedTasks.length})
-                    </button>
-                    {showTaskArchive && (
-                        <ul className="space-y-3 mt-2 max-h-60 overflow-y-auto custom-scrollbar pr-2 border-t border-slate-200 dark:border-slate-700 pt-3">
-                            {completedTasks.map(task => (
-                                <li key={task.id} className="flex items-start p-2 bg-slate-100/50 dark:bg-slate-800/50 rounded-lg opacity-70">
-                                    <input type="checkbox" checked={true} onChange={(e) => handleTaskCheckboxChange(task.id, e.target.checked ? 'Completed' : 'Pending')} className="h-4 w-4 rounded border-slate-300 dark:border-slate-500 text-emerald-600 focus:ring-emerald-500 mt-0.5" />
-                                    <div className="ml-3 flex-grow">
-                                        <p className="font-medium text-sm line-through text-slate-500 dark:text-slate-400">{task.description}</p>
-                                        <p className="text-xs text-slate-400 dark:text-slate-500">Completed: {new Date(task.dueDate + "T00:00:00").toLocaleDateString()}</p>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
-             )}
-        </SectionCard>
-
+        
         <SectionCard title="Notes & Sources" icon={ChatBubbleBottomCenterTextIcon}>
             <EditableText currentValue={groundForDisplay.customNotes || ''} onSave={val => handleDataFieldChange('customNotes', val)} labelText="Custom Notes" textarea disabled={!isEditing} textSize="text-sm" />
             <EditableText currentValue={groundForDisplay.informationSources || ''} onSave={val => handleDataFieldChange('informationSources', val)} labelText="Information Sources" textarea disabled={!isEditing} textSize="text-sm" />
         </SectionCard>
       </div>
+
+      {plantToUpdate && plantToUpdateInfo && (
+        <UpdatePlantStageModal
+          isOpen={!!plantToUpdate}
+          onClose={() => setPlantToUpdate(null)}
+          onSave={handleSavePlantStage}
+          plantInGround={plantToUpdate}
+          plantInfo={plantToUpdateInfo}
+          moduleConfig={moduleConfig}
+        />
+      )}
+
     </div>
   );
 };

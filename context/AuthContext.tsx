@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback, useMemo } from 'react';
 import type { AuthSession, User } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
 import { UserProfile, WeatherLocationPreference } from '../src/modules/jarden/types';
@@ -92,22 +92,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, [fetchAndSetProfile]);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = useCallback(async () => {
     if (!supabase) throw new Error("Supabase client not available.");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
     });
     if (error) throw error;
-  };
+  }, []);
 
-  const signInWithEmail = async (email: string, password: string) => {
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
     if (!supabase) throw new Error("Supabase client not available.");
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     return data;
-  };
+  }, []);
 
-  const signUpWithEmail = async (email: string, password: string, fullName?: string) => {
+  const signUpWithEmail = useCallback(async (email: string, password: string, fullName?: string) => {
     if (!supabase) throw new Error("Supabase client not available.");
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -120,23 +120,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     if (error) throw error;
     return data;
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     if (!supabase) throw new Error("Supabase client not available.");
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     setProfile(null);
-  };
+  }, []);
 
-  const updateUserPassword = async (newPassword: string) => {
+  const updateUserPassword = useCallback(async (newPassword: string) => {
     if (!supabase) throw new Error("Supabase client not available.");
     const { data, error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) throw error;
     return data;
-  };
+  }, []);
   
-  const updateProfileData = async (updates: Partial<Pick<UserProfile, 'full_name' | 'avatar_url' | 'preferences'>>) => {
+  const updateProfileData = useCallback(async (updates: Partial<Pick<UserProfile, 'full_name' | 'avatar_url' | 'preferences'>>) => {
     if (!user) throw new Error("User not authenticated.");
     try {
         const updatedProfile = await updateSupabaseUserProfile(user.id, updates);
@@ -146,14 +146,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.error("Error updating profile data:", error);
         throw error;
     }
-  };
+  }, [user]);
 
 
-  const value = {
+  const value = useMemo(() => ({
     session, user, profile, loading, setProfile,
     signInWithGoogle, signInWithEmail, signUpWithEmail, signOut,
     updateUserPassword, updateProfileData,
-  };
+  }), [session, user, profile, loading, setProfile, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, updateUserPassword, updateProfileData]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

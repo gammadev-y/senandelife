@@ -1,9 +1,14 @@
 
+
+
+
+
+
 import React, { ReactNode, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
 import { MODULES } from '../constants';
-import { ActiveModuleType, Plant, Fertilizer, CompostingMethod, GrowingGround, SeasonalTip, CalendarEvent, RecentViewItem, WeatherLocationPreference, GroundCalendarTask, SeasonalTipInput } from '../types';
+import { ActiveModuleType, Plant, Fertilizer, CompostingMethod, GrowingGround, SeasonalTip, RecentViewItem, WeatherLocationPreference, SeasonalTipInput, EventType, CalendarEventViewModel, CalendarEvent } from '../types';
 import { MagnifyingGlassIcon, PlusIcon, ArrowLeftOnRectangleIcon, ChevronLeftIcon, HomeIcon, UserCircleIcon, CogIcon, CalendarDaysIcon, BellIcon, ArrowRightOnRectangleIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import UserAvatar from './UserAvatar';
 
@@ -131,20 +136,25 @@ const Header: React.FC<{
     onAddNew: () => void;
     activeModuleId: ActiveModuleType | 'home' | 'profile' | 'settings';
     onGoToProfile: () => void;
-}> = ({ onAddNew, activeModuleId, onGoToProfile }) => {
+    onModuleChange: (id: ActiveModuleType | 'home' | 'profile' | 'settings') => void;
+}> = ({ onAddNew, activeModuleId, onGoToProfile, onModuleChange }) => {
     const { profile } = useAuth();
-    const canAddNew = ['florapedia', 'nutribase', 'compostcorner', 'growinggrounds', 'seasonaltips'].includes(activeModuleId);
+    const canAddNew = ['florapedia', 'nutribase', 'compostcorner', 'growinggrounds', 'seasonaltips', 'calendar'].includes(activeModuleId);
     const moduleConfig = MODULES.find(m => m.id === activeModuleId) || MODULES.find(m => m.id === 'home')!;
 
     return (
         <header className="flex-shrink-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-sm p-3 md:p-4 flex items-center justify-between z-20">
-            <div className="flex items-center space-x-3">
-                <Link to="/" title="Back to senande.life" className="text-emerald-600 dark:text-emerald-400 hover:opacity-80 transition-opacity">
+            <div className="flex items-center space-x-2 md:space-x-3">
+                 <Link to="/" title="Back to senande.life" className="text-emerald-600 dark:text-emerald-400 hover:opacity-80 transition-opacity flex items-center">
                     <LeafIcon className="w-7 h-7" />
+                    <span className="font-semibold text-lg text-slate-700 dark:text-slate-200 hidden sm:block ml-2">
+                        senande.life
+                    </span>
                 </Link>
-                <span className="font-semibold text-lg text-slate-700 dark:text-slate-200 hidden sm:block">
-                    senande.life
-                </span>
+                <span className="text-slate-400 dark:text-slate-500 hidden sm:block">.</span>
+                <button onClick={() => onModuleChange('home')} className="font-semibold text-lg text-slate-700 dark:text-slate-200 hidden sm:block hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                    jarden
+                </button>
             </div>
             <div className="flex items-center space-x-3">
                 {canAddNew && (
@@ -153,7 +163,7 @@ const Header: React.FC<{
                         className={`flex items-center px-4 py-2 text-sm font-medium rounded-full shadow-sm text-white ${moduleConfig.bgColor} ${moduleConfig.hoverBgColor} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-emerald-500 transition-all duration-300 ease-in-out`}
                     >
                         <PlusIcon className="w-5 h-5 mr-1 -ml-1" />
-                        Add New
+                        {activeModuleId === 'calendar' ? 'Add Event' : 'Add New'}
                     </button>
                 )}
                 <button className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full transition-colors duration-200 ease-in-out">
@@ -185,6 +195,8 @@ interface JardenLayoutProps {
     growingGrounds: GrowingGround[];
     seasonalTips: SeasonalTip[];
     seasonalTipListItems: SeasonalTipListItemData[];
+    eventTypes: EventType[];
+    calendarEvents: CalendarEventViewModel[];
     recentViews: RecentViewItem[];
     onItemSelect: (id: string, itemType: string) => void;
     selectedItemId: string | null;
@@ -203,11 +215,11 @@ interface JardenLayoutProps {
     onUpdateSeasonalTip: (tipId: string, updates: Partial<SeasonalTipInput>) => void;
     onOpenAddPlantToGroundModal: (groundId: string) => void;
     onOpenAddLogEntryModal: (groundId: string) => void;
-    onOpenAddGroundCalendarTaskModal: (groundId: string) => void;
+    onOpenAddEventForGround: (groundId: string) => void;
     onAiGenerateGroundTasks: (groundId: string) => Promise<void>;
     isLoadingAiForGroundTasks: boolean;
-    onUpdateGroundTask: (groundId: string, taskId: string, updates: Partial<GroundCalendarTask>) => void;
-    onDeleteGroundTask: (groundId: string, taskId: string) => void;
+    onUpdateCalendarEvent: (eventId: string, updates: Partial<CalendarEvent>) => void;
+    onDeleteCalendarEvent: (eventId: string) => void;
     weatherLocationPreference: WeatherLocationPreference | null;
     setIsDefineLocationModalOpen: (isOpen: boolean) => void;
     onNavigateToRecentItem: (item: RecentViewItem) => void;
@@ -217,11 +229,12 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
     const {
         activeModuleId, onModuleChange, searchTerm, onSearchChange, onAddNew, onSignOut,
         plants, plantListItems, fertilizers, compostingMethods, growingGrounds, seasonalTips, seasonalTipListItems,
+        eventTypes, calendarEvents,
         recentViews, onItemSelect, selectedItemId, onDeselect, appError, setAppError, isLoadingAi,
         setIsLoadingAi, onUpdatePlant, onPopulateWithStandardAI, onOpenCustomAiPromptModal,
         onUpdateFertilizer, onUpdateCompostingMethod, onUpdateGrowingGround, onDeleteGround, onUpdateSeasonalTip,
-        onOpenAddPlantToGroundModal, onOpenAddLogEntryModal, onOpenAddGroundCalendarTaskModal,
-        onAiGenerateGroundTasks, isLoadingAiForGroundTasks, onUpdateGroundTask, onDeleteGroundTask,
+        onOpenAddPlantToGroundModal, onOpenAddLogEntryModal, onOpenAddEventForGround,
+        onAiGenerateGroundTasks, isLoadingAiForGroundTasks, onUpdateCalendarEvent, onDeleteCalendarEvent,
         weatherLocationPreference, setIsDefineLocationModalOpen, onNavigateToRecentItem
     } = props;
     
@@ -287,12 +300,6 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
         )
     };
     
-    const calendarEvents = useMemo(() => {
-        // This logic needs to be implemented based on plant and ground data
-        return [] as CalendarEvent[];
-    }, [plants, growingGrounds]);
-
-
     const renderDetailView = () => {
         if (!selectedItemId) {
              const EmptyIcon = moduleConfig.icon || QuestionMarkCircleIcon;
@@ -308,7 +315,7 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
             case 'florapedia': return <PlantDetailView plant={plants.find(p => p.id === selectedItemId) || null} onUpdatePlant={onUpdatePlant} isLoadingAi={isLoadingAi} setIsLoadingAi={setIsLoadingAi} setAppError={setAppError} onOpenCustomAiPromptModal={onOpenCustomAiPromptModal} onPopulateWithStandardAI={onPopulateWithStandardAI} moduleConfig={moduleConfig} onDeselect={onDeselect} isCompactView={isCompactView} />;
             case 'nutribase': return <FertilizerDetailView fertilizer={fertilizers.find(f => f.id === selectedItemId) || null} onUpdateFertilizer={onUpdateFertilizer} setAppError={setAppError} moduleConfig={moduleConfig} onDeselect={onDeselect} isCompactView={isCompactView} />;
             case 'compostcorner': return <CompostingMethodDetailView method={compostingMethods.find(c => c.id === selectedItemId) || null} onUpdateMethod={onUpdateCompostingMethod} setAppError={setAppError} moduleConfig={moduleConfig} onDeselect={onDeselect} isCompactView={isCompactView} />;
-            case 'growinggrounds': return <GrowingGroundDetailView ground={growingGrounds.find(g => g.id === selectedItemId) || null} onUpdateGround={onUpdateGrowingGround} onDeleteGround={onDeleteGround} setAppError={setAppError} plants={plants} onOpenAddLogEntryModal={onOpenAddLogEntryModal} onOpenAddPlantToGroundModal={onOpenAddPlantToGroundModal} onOpenAddGroundCalendarTaskModal={onOpenAddGroundCalendarTaskModal} onAiGenerateGroundTasks={onAiGenerateGroundTasks} isLoadingAiForGroundTasks={isLoadingAiForGroundTasks} onUpdateGroundTask={onUpdateGroundTask} onDeleteGroundTask={onDeleteGroundTask} moduleConfig={moduleConfig} onDeselect={onDeselect} isCompactView={isCompactView} />;
+            case 'growinggrounds': return <GrowingGroundDetailView ground={growingGrounds.find(g => g.id === selectedItemId) || null} onUpdateGround={onUpdateGrowingGround} onDeleteGround={onDeleteGround} setAppError={setAppError} plants={plants} onOpenAddLogEntryModal={onOpenAddLogEntryModal} onOpenAddPlantToGroundModal={onOpenAddPlantToGroundModal} onOpenAddEventForGround={onOpenAddEventForGround} onAiGenerateGroundTasks={onAiGenerateGroundTasks} isLoadingAiForGroundTasks={isLoadingAiForGroundTasks} onUpdateCalendarEvent={onUpdateCalendarEvent} onDeleteCalendarEvent={onDeleteCalendarEvent} calendarEvents={calendarEvents} moduleConfig={moduleConfig} onDeselect={onDeselect} isCompactView={isCompactView} />;
             case 'seasonaltips': return <SeasonalTipDetailView tip={seasonalTips.find(t => t.id === selectedItemId) || null} onUpdateTip={onUpdateSeasonalTip} setAppError={setAppError} moduleConfig={moduleConfig} onDeselect={onDeselect} isCompactView={isCompactView} />;
             default: return null;
         }
@@ -317,7 +324,7 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
     const renderMainContent = () => {
         switch (activeModuleId) {
             case 'home': return <HomePage calendarEvents={calendarEvents} recentViews={recentViews} onNavigateToRecentItem={onNavigateToRecentItem} onNavigateToModule={onModuleChange} seasonalTips={seasonalTipListItems} weatherLocationPreference={weatherLocationPreference} isDefineLocationModalOpen={false} setIsDefineLocationModalOpen={setIsDefineLocationModalOpen} />;
-            case 'calendar': return <CalendarView events={calendarEvents} moduleConfig={moduleConfig} weatherLocationPreference={weatherLocationPreference} setIsDefineLocationModalOpen={setIsDefineLocationModalOpen} />;
+            case 'calendar': return <CalendarView calendarEvents={calendarEvents} moduleConfig={moduleConfig} weatherLocationPreference={weatherLocationPreference} setIsDefineLocationModalOpen={setIsDefineLocationModalOpen} onUpdateCalendarEvent={onUpdateCalendarEvent} />;
             case 'profile': return <ProfilePage />;
             case 'settings': return <SettingsPage onWeatherPreferenceSelect={() => {}} />;
             default:
@@ -339,7 +346,7 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
         <div className="h-screen w-screen bg-slate-100 dark:bg-slate-900 flex text-slate-900 dark:text-slate-100 font-sans">
             <NavRail activeModuleId={activeModuleId} onModuleChange={onModuleChange} onSignOut={onSignOut} />
             <div className="flex-1 flex flex-col min-w-0">
-                <Header onAddNew={onAddNew} activeModuleId={activeModuleId} onGoToProfile={() => onModuleChange('profile')} />
+                <Header onAddNew={onAddNew} activeModuleId={activeModuleId} onGoToProfile={() => onModuleChange('profile')} onModuleChange={onModuleChange} />
                 <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
                     {renderMainContent()}
                 </main>

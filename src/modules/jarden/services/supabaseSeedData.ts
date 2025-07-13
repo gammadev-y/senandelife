@@ -1,5 +1,6 @@
 
-import { Plant, Fertilizer, CompostingMethod } from '../types';
+
+import { Plant, Fertilizer, CompostingMethod, EventType } from '../types';
 
 // This data is based on your previous constants.tsx INITIAL_PLANTS, etc.
 // It's structured to match the frontend Plant type which mapPlantToFloraPediaRow expects.

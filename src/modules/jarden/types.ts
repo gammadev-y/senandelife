@@ -1,4 +1,19 @@
 
+
+
+
+
+
+
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
 export type PlantCalendarTaskType = 'SowIndoors' | 'SowOutdoors' | 'Transplant' | 'Prune' | 'Fertilize' | 'Harvest' | 'Maintenance' | 'Germinate' | 'FlowerWatch' | 'FruitWatch' | 'SeedCollect' | 'Other';
 export type MonthAbbreviation = 'Jan' | 'Feb' | 'Mar' | 'Apr' | 'May' | 'Jun' | 'Jul' | 'Aug' | 'Sep' | 'Oct' | 'Nov' | 'Dec';
 
@@ -503,6 +518,24 @@ export interface Plant {
   updated_at: string;
 }
 
+// Represents the data stored in the 'data' JSONB column of the flora_pedia table.
+export interface PlantJsonData {
+  display_image_url: string | null;
+  image_object_position_y?: number;
+  plant_identification_overview: PlantIdentificationOverview;
+  key_features_uses_general: KeyFeaturesUsesGeneral;
+  cultivation_growing_conditions: CultivationGrowingConditions;
+  plant_nutrition_fertilization_needs: PlantNutritionFertilizationNeeds;
+  plant_care_maintenance: PlantCareMaintenance;
+  growth_stage_timelines_days_from_sowing: GrowthStageTimelinesDaysFromSowing;
+  ecological_interactions: EcologicalInteractions;
+  fruiting_harvesting_conditional: FruitingHarvestingConditional;
+  annual_care_calendar_timeline_summary: AnnualCareCalendarTimelineSummaryItem[];
+  use_cases_human_symbiosis: UseCasesHumanSymbiosis;
+  seed_saving_storage_details: SeedSavingStorageDetails;
+  user_sourcing_information: UserSourcingInformation;
+}
+
 // Raw data from AI, likely partial and needs validation/defaulting
 export type RawPlantDataFromAI = Partial<Plant>;
 
@@ -545,23 +578,7 @@ export interface FloraPediaTableRow {
   parent_plant_id: string | null;
   growth_structure_habit: string | null;
   life_cycle: string | null;
-  data: { // This 'data' field holds all the JSONB content
-    display_image_url?: string | null;
-    image_object_position_y?: number;
-    plant_identification_overview?: Partial<PlantIdentificationOverview>;
-    key_features_uses_general?: Partial<KeyFeaturesUsesGeneral>;
-    cultivation_growing_conditions?: Partial<CultivationGrowingConditions>;
-    plant_nutrition_fertilization_needs?: Partial<PlantNutritionFertilizationNeeds>;
-    plant_care_maintenance?: Partial<PlantCareMaintenance>;
-    growth_stage_timelines_days_from_sowing?: Partial<GrowthStageTimelinesDaysFromSowing>;
-    ecological_interactions?: Partial<EcologicalInteractions>;
-    fruiting_harvesting_conditional?: Partial<FruitingHarvestingConditional>;
-    annual_care_calendar_timeline_summary?: AnnualCareCalendarTimelineSummaryItem[];
-    use_cases_human_symbiosis?: Partial<UseCasesHumanSymbiosis>;
-    seed_saving_storage_details?: Partial<SeedSavingStorageDetails>;
-    user_sourcing_information?: Partial<UserSourcingInformation>;
-    [key: string]: any; // Allow other potential JSONB fields
-  };
+  data: Json;
   created_at: string;
   updated_at: string;
 }
@@ -655,18 +672,20 @@ export interface CompostingMethodInput {
 
 
 // GrowingGrounds
+export type PlantStage = 'Planning' | 'Seeded' | 'Seedling' | 'Vegetative' | 'Flowering' | 'Fruiting' | 'Dormant' | 'Harvested' | 'Failed' | 'Removed';
+
 export interface GrowingGroundPlant {
   plantId: string; // FK to FloraPedia.id
   quantity: number;
   datePlanted: string; // YYYY-MM-DD
-  status: 'Planning' | 'Seeded' | 'Seedling' | 'Vegetative' | 'Flowering' | 'Fruiting' | 'Dormant' | 'Harvested' | 'Failed' | 'Removed';
+  stageLog: { stage: PlantStage; date: string; }[];
   notes?: string;
 }
 
 export type GroundLogActionType = 
   | 'Planting' | 'Water' | 'Fertilize' | 'Prune' | 'Trim' | 'Weeding' | 'Mulching' | 'Maintenance'
   | 'Pest Control' | 'Disease Management' | 'Soil Amendment'
-  | 'Harvest' | 'Observation' | 'Other';
+  | 'Harvest' | 'Observation' | 'Other' | 'Stage Update' | 'Inspection' | 'Intervention';
 
 export interface GroundLogEntry {
   id: string; // UUID generated client-side or by DB
@@ -678,15 +697,6 @@ export interface GroundLogEntry {
   notes?: string;
 }
 
-export interface GroundCalendarTask {
-    id: string; // UUID
-    description: string;
-    dueDate: string; // YYYY-MM-DD
-    actionType: GroundLogActionType;
-    status: 'Pending' | 'In Progress' | 'Completed' | 'Overdue' | 'Cancelled';
-    relatedPlantIds?: string[]; // FKs to Plant.id in this ground
-    notes?: string;
-}
 
 // This interface represents the 'data' JSONB column for growing_grounds
 export interface GrowingGroundData {
@@ -701,7 +711,6 @@ export interface GrowingGroundData {
   areaDimensions?: string; // e.g., "2m x 4m", "5-gallon pot"
   plants: GrowingGroundPlant[];
   logs: GroundLogEntry[];
-  calendarTasks: GroundCalendarTask[];
   customNotes?: string;
   informationSources?: string; // e.g., links to soil tests, plans
 }
@@ -766,19 +775,42 @@ export interface CustomAiPromptModalData {
   sectionKey?: PlantSectionKeyForAI;
 }
 
-export interface CalendarEvent {
-  id: string;
-  date: string; // YYYY-MM-DD
-  title: string;
-  description: string;
-  sourceModule: 'Plant' | 'Ground' | 'General';
-  taskType: GroundLogActionType; 
-  sourceId: string; // ID of the plant or ground
-  sourceName: string;
-  isCompleted?: boolean;
-  status?: GroundCalendarTask['status'];
-  color: string; // Tailwind bg color class e.g. bg-blue-500
+export interface EventType {
+    id: string;
+    name: string;
+    icon_name: string;
+    color_code: string | null;
+    description: string | null;
 }
+
+export interface CalendarEvent {
+    id: string;
+    user_id: string;
+    title: string;
+    description: string | null;
+    start_date: string; // ISO string
+    end_date: string | null; // ISO string
+    event_type_id: string | null;
+    is_recurring: boolean | null;
+    recurrence_rule: string | null;
+    is_completed: boolean;
+    related_module: string | null;
+    related_entry_id: string | null;
+    created_at: string;
+    updated_at: string;
+    // Joined data from event_types for easier rendering
+    event_types?: EventType;
+}
+
+// ViewModel for UI display
+export interface CalendarEventViewModel extends CalendarEvent {
+  ground_ids?: string[];
+  // For easier UI access
+  status: 'Pending' | 'Completed' | 'Overdue';
+  color?: string; // from event_types.color_code
+  iconName?: string; // from event_types.icon_name
+}
+
 
 // For User View History
 export type ItemTypeForRecentView = 'plant' | 'fertilizer' | 'compost_method' | 'growing_ground' | 'seasonal_tip';
@@ -857,5 +889,5 @@ export interface UserProfile {
   full_name?: string | null;
   avatar_url?: string | null;
   preferences?: UserPreferences;
-  updated_at?: string; // ISO string timestamp
+  updated_at?: string; // ISO string
 }
