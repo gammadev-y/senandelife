@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useRef } from 'react';
 import { GroundLogEntry, GroundLogActionType } from '../types';
 import { GROUND_LOG_ACTION_TYPES, MODULES } from '../constants';
@@ -77,26 +78,26 @@ const AddLogEntryModal: React.FC<AddLogEntryModalProps> = ({ isOpen, onClose, on
     clearForm();
   };
   
-  const inputBaseClass = "w-full px-3 py-2.5 border-0 border-b-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none sm:text-sm transition-colors";
-  const inputFocusClass = `focus:border-${moduleConfig.baseColorClass}-500 dark:focus:border-${moduleConfig.baseColorClass}-400 focus:ring-0 focus:bg-slate-50 dark:focus:bg-slate-600/50`;
-  const inputErrorClass = "border-red-500 dark:border-red-400";
+  const inputBaseClass = "w-full px-3 py-2.5 border-0 border-b-2 bg-[#E5E3DD] text-[#2C2C2C] placeholder-[#A67C52] focus:outline-none sm:text-sm transition-colors";
+  const inputFocusClass = `focus:border-[#6C8C61] focus:ring-0 focus:bg-[#DCEFD6]`;
+  const inputErrorClass = "border-red-500";
 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 print:hidden" aria-modal="true" role="dialog">
-      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-lg transform transition-all max-h-[90vh] flex flex-col">
+      <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg transform transition-all max-h-[90vh] flex flex-col border border-[#E5E3DD]">
         <div className="flex justify-between items-center mb-5">
-          <h2 className="text-xl font-medium text-slate-800 dark:text-slate-100">Add Log Entry</h2>
-          <button type="button" onClick={() => { clearForm(); onClose();}} className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full" aria-label="Close modal">
+          <h2 className="text-xl font-medium text-[#1D3117]">Add Log Entry</h2>
+          <button type="button" onClick={() => { clearForm(); onClose();}} className="p-1.5 text-[#A67C52] hover:bg-[#E5E3DD] rounded-full" aria-label="Close modal">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
-        {error && <p className="text-red-600 dark:text-red-400 text-sm mb-3 p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">{error}</p>}
+        {error && <p className="text-red-600 text-sm mb-3 p-2 bg-red-100 rounded-lg">{error}</p>}
 
         <div className="space-y-5 flex-grow overflow-y-auto custom-scrollbar pr-2">
           <div>
-            <label htmlFor="logTimestamp" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Date & Time</label>
+            <label htmlFor="logTimestamp" className="block text-xs font-medium text-[#A67C52] mb-1">Date & Time</label>
             <input
               type="datetime-local"
               id="logTimestamp"
@@ -107,7 +108,7 @@ const AddLogEntryModal: React.FC<AddLogEntryModalProps> = ({ isOpen, onClose, on
           </div>
 
           <div>
-            <label htmlFor="actionType" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Action Type</label>
+            <label htmlFor="actionType" className="block text-xs font-medium text-[#A67C52] mb-1">Action Type</label>
             <select
               id="actionType"
               value={actionType}
@@ -121,7 +122,7 @@ const AddLogEntryModal: React.FC<AddLogEntryModalProps> = ({ isOpen, onClose, on
           </div>
 
           <div>
-            <label htmlFor="logDescription" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+            <label htmlFor="logDescription" className="block text-xs font-medium text-[#A67C52] mb-1">
               Description <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -135,14 +136,14 @@ const AddLogEntryModal: React.FC<AddLogEntryModalProps> = ({ isOpen, onClose, on
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Photos (up to {MAX_PHOTOS}, optional)</label>
+            <label className="block text-xs font-medium text-[#A67C52] mb-1">Photos (up to {MAX_PHOTOS}, optional)</label>
             {Array.from({ length: MAX_PHOTOS }).map((_, index) => (
-              <div key={index} className="mt-2 flex items-center space-x-3 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg mb-2">
+              <div key={index} className="mt-2 flex items-center space-x-3 p-3 bg-[#f0f0f0] rounded-lg mb-2">
                 {photoBase64s[index] ? (
                     <img src={photoBase64s[index]!} alt={`Preview ${index + 1}`} className="w-16 h-16 rounded-lg object-cover shadow-sm" />
                 ) : (
-                    <div className="w-16 h-16 rounded-lg bg-slate-200 dark:bg-slate-600 flex items-center justify-center">
-                      <PhotoIcon className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+                    <div className="w-16 h-16 rounded-lg bg-[#E5E3DD] flex items-center justify-center">
+                      <PhotoIcon className="w-8 h-8 text-[#A67C52]" />
                     </div>
                 )}
                 <div className="flex flex-col space-y-1.5">
@@ -157,7 +158,7 @@ const AddLogEntryModal: React.FC<AddLogEntryModalProps> = ({ isOpen, onClose, on
                     <button
                         type="button"
                         onClick={() => fileInputRefs.current[index]?.click()}
-                        className={`px-3 py-1.5 text-xs font-medium text-${moduleConfig.baseColorClass}-700 bg-${moduleConfig.baseColorClass}-100 hover:bg-${moduleConfig.baseColorClass}-200 dark:text-${moduleConfig.baseColorClass}-200 dark:bg-${moduleConfig.baseColorClass}-700 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm flex items-center`}
+                        className={`px-3 py-1.5 text-xs font-medium text-white bg-[#6C8C61] hover:bg-[#5a7850] rounded-full shadow-sm flex items-center`}
                     >
                         <ArrowUpTrayIcon className="w-3.5 h-3.5 mr-1" />
                         {photoBase64s[index] ? 'Change' : 'Upload'}
@@ -171,7 +172,7 @@ const AddLogEntryModal: React.FC<AddLogEntryModalProps> = ({ isOpen, onClose, on
                             setPhotoBase64s(newPhotos);
                             if(fileInputRefs.current[index]) fileInputRefs.current[index]!.value = '';
                         }}
-                        className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full"
+                        className="px-3 py-1.5 text-xs font-medium text-[#2C2C2C] hover:bg-[#E5E3DD] rounded-full"
                         >
                          Remove
                         </button>
@@ -182,18 +183,18 @@ const AddLogEntryModal: React.FC<AddLogEntryModalProps> = ({ isOpen, onClose, on
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+        <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-[#E5E3DD]">
           <button
             type="button"
             onClick={() => { clearForm(); onClose(); }}
-            className={`px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400`}
+            className={`px-4 py-2 text-sm font-medium text-[#6C8C61] hover:bg-[#DCEFD6] rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#6C8C61]`}
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className={`px-6 py-2 text-sm font-medium text-white bg-${moduleConfig.baseColorClass}-600 hover:bg-${moduleConfig.baseColorClass}-700 dark:bg-${moduleConfig.baseColorClass}-500 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 focus:ring-${moduleConfig.baseColorClass}-500`}
+            className={`px-6 py-2 text-sm font-medium text-white bg-[#6C8C61] hover:bg-[#5a7850] rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-[#6C8C61]`}
           >
             Save Log Entry
           </button>

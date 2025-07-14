@@ -18,8 +18,8 @@ interface CompostingMethodListItemProps {
 const CompostingMethodListItem: React.FC<CompostingMethodListItemProps> = ({ method, onSelectMethod, isSelected, moduleConfig }) => {
   const imagePosition = method.data.image_object_position_y || 50;
 
-  const selectedItemClasses = `ring-2 ring-${moduleConfig.baseColorClass}-500 dark:ring-${moduleConfig.baseColorClass}-400 bg-${moduleConfig.baseColorClass}-50 dark:bg-${moduleConfig.baseColorClass}-900/50`;
-  const normalItemClasses = 'bg-white dark:bg-slate-800 hover:shadow-xl dark:hover:bg-slate-700/70';
+  const selectedItemClasses = `ring-2 ring-[#6C8C61] bg-[#DCEFD6]`;
+  const normalItemClasses = 'bg-white hover:shadow-xl hover:bg-[#E5E3DD]';
     
   return (
     <li
@@ -49,14 +49,14 @@ const CompostingMethodListItem: React.FC<CompostingMethodListItemProps> = ({ met
           />
         ) : null }
         <div 
-            className={`stock-icon-placeholder w-full h-full flex items-center justify-center bg-slate-200 dark:bg-slate-700 ${method.data.imageUrl ? 'hidden' : 'flex'}`}
+            className={`stock-icon-placeholder w-full h-full flex items-center justify-center bg-[#E5E3DD] ${method.data.imageUrl ? 'hidden' : 'flex'}`}
         >
-          <CubeTransparentIcon className={`w-16 h-16 text-${moduleConfig.baseColorClass}-400 dark:text-${moduleConfig.baseColorClass}-500`} />
+          <CubeTransparentIcon className={`w-16 h-16 text-[#6C8C61]`} />
         </div>
       </div>
       <div className="p-3 text-center w-full">
-        <p className={`font-medium text-sm truncate ${isSelected ? `text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-200` : 'text-slate-800 dark:text-slate-100'}`}>{method.method_name}</p>
-        <p className={`text-xs truncate ${isSelected ? `text-${moduleConfig.baseColorClass}-600 dark:text-${moduleConfig.baseColorClass}-300` : 'text-slate-500 dark:text-slate-400'}`}>
+        <p className={`font-medium text-sm truncate ${isSelected ? `text-[#1D3117]` : 'text-[#2C2C2C]'}`}>{method.method_name}</p>
+        <p className={`text-xs truncate ${isSelected ? `text-[#1D3117]/80` : 'text-[#A67C52]'}`}>
             {method.primary_composting_approach}
         </p>
       </div>

@@ -1,5 +1,4 @@
 
-
 import React, { useState, useRef } from 'react';
 import { SeasonalTipInput, SeasonalTipContentType, TipImage } from '../types';
 import { XMarkIcon, PhotoIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
@@ -107,39 +106,39 @@ const AddNewSeasonalTipModal: React.FC<AddNewSeasonalTipModalProps> = ({ isOpen,
     }
   };
   
-  const inputBaseClass = "w-full px-3 py-2.5 border-0 border-b-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none sm:text-sm transition-colors";
-  const inputFocusClass = `focus:border-${moduleConfig.baseColorClass}-500 dark:focus:border-${moduleConfig.baseColorClass}-400 focus:ring-0 focus:bg-slate-50 dark:focus:bg-slate-600/50`;
-  const inputErrorClass = "border-red-500 dark:border-red-400";
+  const inputBaseClass = "w-full px-3 py-2.5 border-0 border-b-2 bg-[#E5E3DD] text-[#2C2C2C] placeholder-[#A67C52] focus:outline-none sm:text-sm transition-colors";
+  const inputFocusClass = `focus:border-[#6C8C61] focus:ring-0 focus:bg-[#DCEFD6]`;
+  const inputErrorClass = "border-red-500";
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 print:hidden" aria-modal="true" role="dialog">
-      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-lg transform transition-all max-h-[90vh] flex flex-col">
+      <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg transform transition-all max-h-[90vh] flex flex-col border border-[#E5E3DD]">
         <div className="flex justify-between items-center mb-5">
-          <h2 className="text-xl font-medium text-slate-800 dark:text-slate-100">Add New Seasonal Tip</h2>
+          <h2 className="text-xl font-medium text-[#1D3117]">Add New Seasonal Tip</h2>
           <button
             onClick={handleClose}
-            className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full"
+            className="p-1.5 text-[#A67C52] hover:bg-[#E5E3DD] rounded-full"
             aria-label="Close modal"
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
-        {error && <p className="text-red-600 dark:text-red-400 text-sm mb-3 p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">{error}</p>}
+        {error && <p className="text-red-600 text-sm mb-3 p-2 bg-red-100 rounded-lg">{error}</p>}
 
         <div className="space-y-4 flex-grow overflow-y-auto custom-scrollbar pr-2">
           <div>
-            <label htmlFor="tipTitle" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+            <label htmlFor="tipTitle" className="block text-xs font-medium text-[#A67C52] mb-1">
               Title <span className="text-red-500">*</span>
             </label>
             <input type="text" id="tipTitle" value={title} onChange={(e) => setTitle(e.target.value)} className={`${inputBaseClass} ${title.trim() || !error ? inputFocusClass : inputErrorClass} rounded-t-lg`} required />
           </div>
           <div>
-            <label htmlFor="tipDescription" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Description (Short Summary)</label>
+            <label htmlFor="tipDescription" className="block text-xs font-medium text-[#A67C52] mb-1">Description (Short Summary)</label>
             <textarea id="tipDescription" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className={`${inputBaseClass} ${inputFocusClass} rounded-t-lg leading-relaxed`} />
           </div>
           <div>
-            <label htmlFor="tipContentType" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Content Type</label>
+            <label htmlFor="tipContentType" className="block text-xs font-medium text-[#A67C52] mb-1">Content Type</label>
             <select id="tipContentType" value={contentType} onChange={(e) => setContentType(e.target.value as SeasonalTipContentType)} className={`${inputBaseClass} ${inputFocusClass} rounded-lg appearance-none`}>
               <option value="url">External URL</option>
               <option value="article">Jarden Article (Markdown)</option>
@@ -148,7 +147,7 @@ const AddNewSeasonalTipModal: React.FC<AddNewSeasonalTipModalProps> = ({ isOpen,
 
           {contentType === 'url' && (
             <div>
-              <label htmlFor="tipSourceUrl" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+              <label htmlFor="tipSourceUrl" className="block text-xs font-medium text-[#A67C52] mb-1">
                 Source URL <span className="text-red-500">*</span>
               </label>
               <input type="url" id="tipSourceUrl" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} className={`${inputBaseClass} ${sourceUrl.trim() || !error ? inputFocusClass : inputErrorClass} rounded-t-lg`} placeholder="https://example.com/tip" required={contentType === 'url'}/>
@@ -157,14 +156,14 @@ const AddNewSeasonalTipModal: React.FC<AddNewSeasonalTipModalProps> = ({ isOpen,
 
           {contentType === 'article' && (
             <div>
-              <label htmlFor="tipArticleContent" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Article Content (Markdown)</label>
+              <label htmlFor="tipArticleContent" className="block text-xs font-medium text-[#A67C52] mb-1">Article Content (Markdown)</label>
               <textarea id="tipArticleContent" value={articleMarkdownContent} onChange={(e) => setArticleMarkdownContent(e.target.value)} rows={6} className={`${inputBaseClass} ${inputFocusClass} rounded-t-lg leading-relaxed`} placeholder="Write your article here using Markdown..." />
             </div>
           )}
           
           <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Images (up to {MAX_IMAGES})</label>
-            <div className="mt-1 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+            <label className="block text-xs font-medium text-[#A67C52] mb-1">Images (up to {MAX_IMAGES})</label>
+            <div className="mt-1 p-3 bg-[#f0f0f0] rounded-lg">
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
                     {images.map((image, index) => (
                         <div key={index} className="relative group aspect-square">
@@ -182,7 +181,7 @@ const AddNewSeasonalTipModal: React.FC<AddNewSeasonalTipModalProps> = ({ isOpen,
                          <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className={`aspect-square w-full rounded-lg bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors`}
+                            className={`aspect-square w-full rounded-lg bg-[#E5E3DD] flex items-center justify-center text-[#A67C52] hover:bg-[#DCEFD6] transition-colors`}
                             aria-label="Add new image"
                          >
                             <ArrowUpTrayIcon className="w-8 h-8" />
@@ -201,22 +200,22 @@ const AddNewSeasonalTipModal: React.FC<AddNewSeasonalTipModalProps> = ({ isOpen,
           </div>
 
           <div>
-            <label htmlFor="tipTags" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Tags (comma-separated)</label>
+            <label htmlFor="tipTags" className="block text-xs font-medium text-[#A67C52] mb-1">Tags (comma-separated)</label>
             <input type="text" id="tipTags" value={tags} onChange={(e) => setTags(e.target.value)} className={`${inputBaseClass} ${inputFocusClass} rounded-t-lg`} placeholder="e.g., spring, soil, beginner tips" />
           </div>
           <div>
-            <label htmlFor="tipAuthor" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Author Name (Optional)</label>
+            <label htmlFor="tipAuthor" className="block text-xs font-medium text-[#A67C52] mb-1">Author Name (Optional)</label>
             <input type="text" id="tipAuthor" value={authorName} onChange={(e) => setAuthorName(e.target.value)} className={`${inputBaseClass} ${inputFocusClass} rounded-t-lg`} placeholder="Jarden Contributor" />
           </div>
 
         </div>
 
-        <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+        <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-[#E5E3DD]">
           <button
             type="button"
             onClick={handleClose}
             disabled={isSaving}
-            className={`px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400 disabled:opacity-70`}
+            className={`px-4 py-2 text-sm font-medium text-[#6C8C61] hover:bg-[#DCEFD6] rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#6C8C61] disabled:opacity-70`}
           >
             Cancel
           </button>
@@ -224,7 +223,7 @@ const AddNewSeasonalTipModal: React.FC<AddNewSeasonalTipModalProps> = ({ isOpen,
             type="button"
             onClick={handleSubmit}
             disabled={isSaving}
-            className={`min-w-[110px] px-6 py-2 text-sm font-medium text-white bg-${moduleConfig.baseColorClass}-600 hover:bg-${moduleConfig.baseColorClass}-700 dark:bg-${moduleConfig.baseColorClass}-500 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 focus:ring-${moduleConfig.baseColorClass}-500 disabled:opacity-70 flex justify-center items-center`}
+            className={`min-w-[110px] px-6 py-2 text-sm font-medium text-white bg-[#6C8C61] hover:bg-[#5a7850] rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-[#6C8C61] disabled:opacity-70 flex justify-center items-center`}
           >
             {isSaving ? <LoadingSpinner size="sm" color="text-white" /> : 'Save Tip'}
           </button>

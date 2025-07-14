@@ -64,26 +64,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             
             setProfile(userProfile);
 
-            // Apply theme from profile
-            const theme = userProfile?.preferences?.theme || 'system';
-            document.documentElement.classList.remove('dark', 'light');
-            if (theme === 'dark') {
-              document.documentElement.classList.add('dark');
-            } else if (theme === 'light') {
-              document.documentElement.classList.add('light');
-            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-              document.documentElement.classList.add('dark');
-            }
           } catch (error) {
             console.error('Error handling auth state change:', error);
             setProfile(null);
           }
         } else {
             setProfile(null); 
-            document.documentElement.classList.remove('dark', 'light');
-             if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-               document.documentElement.classList.add('dark');
-             }
         }
         setLoading(false);
       }

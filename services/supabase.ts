@@ -1,5 +1,6 @@
 
 
+
 import { createClient } from '@supabase/supabase-js';
 import { 
     FloraPediaTableRow, 
@@ -28,7 +29,6 @@ import {
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-
 export interface Database {
   public: {
     Tables: {
@@ -44,7 +44,7 @@ export interface Database {
             parent_plant_id?: string | null;
             growth_structure_habit?: string | null;
             life_cycle?: string | null;
-            data?: Json | null;
+            data?: any | null;
         }
         Update: {
             latin_name_scientific_name?: string;
@@ -56,7 +56,7 @@ export interface Database {
             parent_plant_id?: string | null;
             growth_structure_habit?: string | null;
             life_cycle?: string | null;
-            data?: Json | null;
+            data?: any | null;
         }
       },
       nutri_base: {
@@ -75,14 +75,14 @@ export interface Database {
             fertilizer_id_sku?: string;
             type: 'Organic' | 'Synthetic' | 'Mineral' | 'Soil Amendment' | 'Other';
             form: 'Liquid' | 'Granular' | 'Powder' | 'Spike' | 'Meal' | 'Tea' | 'Other';
-            data?: Json | null;
+            data?: any | null;
         }
         Update: {
             fertilizer_name?: string;
             fertilizer_id_sku?: string;
             type?: 'Organic' | 'Synthetic' | 'Mineral' | 'Soil Amendment' | 'Other';
             form?: 'Liquid' | 'Granular' | 'Powder' | 'Spike' | 'Meal' | 'Tea' | 'Other';
-            data?: Json | null;
+            data?: any | null;
         }
       },
       compost_corner: {
@@ -103,7 +103,7 @@ export interface Database {
             primary_composting_approach: 'Aerobic (Hot Pile)' | 'Aerobic (Cold Pile)' | 'Aerobic (Tumbler)' | 'Anaerobic (Bokashi)' | 'Vermicomposting (Worm Farm)' | 'Sheet Mulching (Lasagna)' | 'Trench Composting' | 'Other';
             scale_of_operation: 'Small (Apartment/Balcony)' | 'Medium (Home Garden)' | 'Large (Homestead/Farm)' | 'Community Scale';
             produced_fertilizer_id?: string;
-            data?: Json | null;
+            data?: any | null;
         }
         Update: {
             method_name?: string;
@@ -111,17 +111,18 @@ export interface Database {
             primary_composting_approach?: 'Aerobic (Hot Pile)' | 'Aerobic (Cold Pile)' | 'Aerobic (Tumbler)' | 'Anaerobic (Bokashi)' | 'Vermicomposting (Worm Farm)' | 'Sheet Mulching (Lasagna)' | 'Trench Composting' | 'Other';
             scale_of_operation?: 'Small (Apartment/Balcony)' | 'Medium (Home Garden)' | 'Large (Homestead/Farm)' | 'Community Scale';
             produced_fertilizer_id?: string;
-            data?: Json | null;
+            data?: any | null;
         }
       },
       growing_grounds: {
         Row: { id: string; name: string; user_id: string; data: Json | null; created_at: string; updated_at: string; }
-        Insert: { name: string; user_id: string; data?: Json | null; }
-        Update: { name?: string; data?: Json | null; }
+        Insert: { name: string; user_id: string; data?: any | null; }
+        Update: { name?: string; data?: any | null; }
       },
       user_view_history: {
           Row: RecentViewItem & { user_id: string };
           Insert: {
+            id: string;
             user_id: string;
             item_id: string;
             item_type: ItemTypeForRecentView;
@@ -161,7 +162,7 @@ export interface Database {
             content_type: SeasonalTipContentType;
             source_url?: string | null;
             article_markdown_content?: string | null;
-            images: Json;
+            images: any;
             tags?: string[];
             author_name?: string | null;
             published_at?: string;
@@ -172,7 +173,7 @@ export interface Database {
             content_type?: SeasonalTipContentType;
             source_url?: string | null;
             article_markdown_content?: string | null;
-            images?: Json;
+            images?: any;
             tags?: string[];
             author_name?: string | null;
             published_at?: string;
@@ -181,11 +182,13 @@ export interface Database {
       user_profiles: {
           Row: {
               id: string; // fk to auth.users.id
+              full_name: string | null;
+              avatar_url: string | null;
               preferences: Json | null;
               updated_at: string | null;
           }
-          Insert: { id: string; preferences?: Json | null; }
-          Update: { id?: string; preferences?: Json | null; }
+          Insert: { id: string; full_name?: string | null; avatar_url?: string | null; preferences?: any | null; }
+          Update: { full_name?: string | null; avatar_url?: string | null; preferences?: any | null; }
       },
       event_types: {
         Row: EventType;
@@ -249,7 +252,7 @@ export interface Database {
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error(
-    'Supabase environment variables not set. Please provide SUPABASE_URL and SUPABASE_KEY.'
+    'Supabase environment variables not set. Please provide SUPABASE_URL and SUPABASE_ANON_KEY.'
   );
   // To avoid crashing the entire app in the sandbox, we are not throwing an error,
   // but in a real app, you should throw an error to fail fast.

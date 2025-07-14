@@ -5,18 +5,18 @@ import {
   ActiveModuleType, MonthAbbreviation, GroundLogActionType, GrowingGround, PlantStage, EventType, PlantCalendarTaskType,
 } from './types';
 import { 
-    HomeIcon as HomeOutlineIcon, MagnifyingGlassIcon, MapIcon as MapOutlineIcon, 
-    CalendarDaysIcon as CalendarOutlineIcon, BeakerIcon, CubeTransparentIcon, 
     CogIcon, BoltIcon, ArrowPathIcon, WrenchScrewdriverIcon, ArchiveBoxIcon, 
     SparklesIcon as SparklesOutlineIcon, StarIcon, InboxStackIcon, 
-    InformationCircleIcon, AcademicCapIcon, PresentationChartLineIcon, UserCircleIcon,
+    InformationCircleIcon, AcademicCapIcon, PresentationChartLineIcon,
     PaintBrushIcon, ScissorsIcon, CloudIcon, EyeIcon, ChatBubbleLeftEllipsisIcon,
     ShieldExclamationIcon, TrashIcon, CheckCircleIcon, ListBulletIcon, PlusCircleIcon,
     ExclamationCircleIcon, AdjustmentsHorizontalIcon, ClockIcon, PaperAirplaneIcon, BookOpenIcon,
     ClipboardDocumentListIcon, BugAntIcon, TagIcon
 } from '@heroicons/react/24/outline';
-import LeafIcon from './components/icons/LeafIcon';
-import LightBulbIcon from './components/icons/LightBulbIcon'; 
+import { 
+    HomeIcon, PlantsIcon, GroundsIcon, TasksIcon, TipsIcon, ProfileIcon,
+    FertilizerIcon, CompostIcon, SettingsIcon
+} from './components/icons/JardenIcons';
 
 
 export const GEMINI_MODEL_NAME = 'gemini-2.5-flash';
@@ -185,49 +185,49 @@ export const MODULES: {
   listItemHoverBg: string;
 }[] = [
   {
-    id: 'home', name: 'Home', icon: HomeOutlineIcon, baseColorClass: 'blue',
+    id: 'home', name: 'Home', icon: HomeIcon, baseColorClass: 'blue',
     bgColor: 'bg-blue-600 dark:bg-blue-500', textColor: 'text-white', hoverBgColor: 'hover:bg-blue-700 dark:hover:bg-blue-600',
     navRailContainerBg: 'bg-blue-100 dark:bg-blue-800', navRailIconColor: 'text-blue-600 dark:text-blue-300', navRailTextColor: 'text-blue-700 dark:text-blue-200',
     listItemSelectedBg: 'bg-blue-100 dark:bg-blue-700', listItemSelectedText: 'text-blue-800 dark:text-blue-100', listItemHoverBg: 'hover:bg-blue-50 dark:hover:bg-blue-600'
   },
   {
-    id: 'florapedia', name: 'Explore', icon: MagnifyingGlassIcon, baseColorClass: 'green',
+    id: 'florapedia', name: 'Explore', icon: PlantsIcon, baseColorClass: 'green',
     bgColor: 'bg-green-600 dark:bg-green-500', textColor: 'text-white', hoverBgColor: 'hover:bg-green-700 dark:hover:bg-green-600',
     navRailContainerBg: 'bg-green-100 dark:bg-green-800', navRailIconColor: 'text-green-600 dark:text-green-300', navRailTextColor: 'text-green-700 dark:text-green-200',
     listItemSelectedBg: 'bg-green-100 dark:bg-green-700', listItemSelectedText: 'text-green-800 dark:text-green-100', listItemHoverBg: 'hover:bg-green-50 dark:hover:bg-green-600'
   },
   {
-    id: 'growinggrounds', name: 'My Jarden', icon: LeafIcon, baseColorClass: 'purple', 
+    id: 'growinggrounds', name: 'My Jarden', icon: GroundsIcon, baseColorClass: 'purple', 
     bgColor: 'bg-purple-600 dark:bg-purple-500', textColor: 'text-white', hoverBgColor: 'hover:bg-purple-700 dark:hover:bg-purple-600',
     navRailContainerBg: 'bg-purple-100 dark:bg-purple-800', navRailIconColor: 'text-purple-600 dark:text-purple-300', navRailTextColor: 'text-purple-700 dark:text-purple-200',
     listItemSelectedBg: 'bg-purple-100 dark:bg-purple-700', listItemSelectedText: 'text-purple-800 dark:text-purple-100', listItemHoverBg: 'hover:bg-purple-50 dark:hover:bg-purple-600'
   },
   {
-    id: 'calendar', name: 'Tasks', icon: CalendarOutlineIcon, baseColorClass: 'rose',
+    id: 'calendar', name: 'Tasks', icon: TasksIcon, baseColorClass: 'rose',
     bgColor: 'bg-rose-600 dark:bg-rose-500', textColor: 'text-white', hoverBgColor: 'hover:bg-rose-700 dark:hover:bg-rose-600',
     navRailContainerBg: 'bg-rose-100 dark:bg-rose-800', navRailIconColor: 'text-rose-600 dark:text-rose-300', navRailTextColor: 'text-rose-700 dark:text-rose-200',
     listItemSelectedBg: 'bg-rose-100 dark:bg-rose-700', listItemSelectedText: 'text-rose-800 dark:text-rose-100', listItemHoverBg: 'hover:bg-rose-50 dark:hover:bg-rose-600'
   },
   {
-    id: 'seasonaltips', name: 'Tips', icon: LightBulbIcon, baseColorClass: 'orange',
+    id: 'seasonaltips', name: 'Tips', icon: TipsIcon, baseColorClass: 'orange',
     bgColor: 'bg-orange-600 dark:bg-orange-500', textColor: 'text-white', hoverBgColor: 'hover:bg-orange-700 dark:hover:bg-orange-600',
     navRailContainerBg: 'bg-orange-100 dark:bg-orange-800', navRailIconColor: 'text-orange-600 dark:text-orange-300', navRailTextColor: 'text-orange-700 dark:text-orange-200',
     listItemSelectedBg: 'bg-orange-100 dark:bg-orange-700', listItemSelectedText: 'text-orange-800 dark:text-orange-100', listItemHoverBg: 'hover:bg-orange-50 dark:hover:bg-orange-600'
   },
   {
-    id: 'profile', name: 'Profile', icon: UserCircleIcon, baseColorClass: 'teal', 
+    id: 'profile', name: 'Profile', icon: ProfileIcon, baseColorClass: 'teal', 
     bgColor: 'bg-teal-600 dark:bg-teal-500', textColor: 'text-white', hoverBgColor: 'hover:bg-teal-700 dark:hover:bg-teal-600',
     navRailContainerBg: 'bg-teal-100 dark:bg-teal-800', navRailIconColor: 'text-teal-600 dark:text-teal-300', navRailTextColor: 'text-teal-700 dark:text-teal-200',
     listItemSelectedBg: 'bg-teal-100 dark:bg-teal-700', listItemSelectedText: 'text-teal-800 dark:text-teal-100', listItemHoverBg: 'hover:bg-teal-50 dark:hover:bg-teal-600'
   },
    {
-    id: 'nutribase', name: 'NutriBase', icon: BeakerIcon, baseColorClass: 'sky', 
+    id: 'nutribase', name: 'NutriBase', icon: FertilizerIcon, baseColorClass: 'sky', 
     bgColor: 'bg-sky-600 dark:bg-sky-500', textColor: 'text-white', hoverBgColor: 'hover:bg-sky-700 dark:hover:bg-sky-600',
     navRailContainerBg: 'bg-sky-100 dark:bg-sky-800', navRailIconColor: 'text-sky-600 dark:text-sky-300', navRailTextColor: 'text-sky-700 dark:text-sky-200',
     listItemSelectedBg: 'bg-sky-100 dark:bg-sky-700', listItemSelectedText: 'text-sky-800 dark:text-sky-100', listItemHoverBg: 'hover:bg-sky-50 dark:hover:bg-sky-600'
   },
   {
-    id: 'compostcorner', name: 'Compost', icon: CubeTransparentIcon, baseColorClass: 'yellow', 
+    id: 'compostcorner', name: 'Compost', icon: CompostIcon, baseColorClass: 'yellow', 
     bgColor: 'bg-yellow-500 dark:bg-yellow-400', textColor: 'text-neutral-900', hoverBgColor: 'hover:bg-yellow-600 dark:hover:bg-yellow-500',
     navRailContainerBg: 'bg-yellow-100 dark:bg-yellow-800', navRailIconColor: 'text-yellow-600 dark:text-yellow-300', navRailTextColor: 'text-yellow-700 dark:text-yellow-200',
     listItemSelectedBg: 'bg-yellow-100 dark:bg-yellow-700', listItemSelectedText: 'text-yellow-800 dark:text-yellow-100', listItemHoverBg: 'hover:bg-yellow-50 dark:hover:bg-yellow-600'

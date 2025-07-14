@@ -1,10 +1,11 @@
 
 import React, { useRef, useState, useEffect } from 'react';
+import { produce } from 'immer';
 import { CompostingMethod, CompostingMethodData } from '../types';
 import { COMPOSTING_METHOD_LABELS, MODULES } from '../constants';
 import SectionCard from './SectionCard';
 import EditableText from './EditableText';
-import { CubeTransparentIcon, DocumentTextIcon, CogIcon, AdjustmentsVerticalIcon, ClockIcon, ExclamationTriangleIcon, CheckCircleIcon, SparklesIcon, InformationCircleIcon, ListBulletIcon, ChatBubbleBottomCenterTextIcon, UsersIcon, ScaleIcon, TagIcon, PencilIcon, VariableIcon as VariableOutlineIcon, ChevronLeftIcon, ChevronUpIcon, ChevronDownIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { CubeTransparentIcon, DocumentTextIcon, CogIcon, AdjustmentsVerticalIcon, ClockIcon, ExclamationTriangleIcon, CheckCircleIcon, SparklesIcon, InformationCircleIcon, ListBulletIcon, ChatBubbleBottomCenterTextIcon, UsersIcon, ScaleIcon, TagIcon, PencilIcon, VariableIcon as VariableOutlineIcon, ChevronLeftIcon, ChevronUpIcon, ChevronDownIcon, ArrowPathIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { convertFileToBase64 } from '../utils/imageUtils';
 import { useAuth } from '../../../../context/AuthContext';
 
@@ -17,69 +18,75 @@ interface CompostingMethodDetailViewProps {
   isCompactView: boolean;
 }
 
-const CompostingMethodDetailView: React.FC<CompostingMethodDetailViewProps> = ({ method, onUpdateMethod, setAppError, moduleConfig, onDeselect, isCompactView }) => {
+const CompostingMethodDetailView: React.FC<CompostingMethodDetailViewProps> = ({ method: initialMethod, onUpdateMethod, setAppError, moduleConfig, onDeselect, isCompactView }) => {
   const { user } = useAuth();
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [imageObjectPositionY, setImageObjectPositionY] = useState(method?.data.image_object_position_y || 50);
+  const [editableMethod, setEditableMethod] = useState<CompostingMethod | null>(null);
 
   useEffect(() => {
-    if (method) {
-      setImageObjectPositionY(method.data.image_object_position_y || 50);
+    if (!isEditing) {
+      setEditableMethod(initialMethod ? JSON.parse(JSON.stringify(initialMethod)) : null);
     }
-    setIsEditing(false);
-  }, [method]);
+  }, [initialMethod, isEditing]);
 
-  const handleSaveDirectField = (field: keyof Pick<CompostingMethod, 'method_name' | 'primary_composting_approach' | 'scale_of_operation'>, value: string) => {
-    if (method) {
-      onUpdateMethod(method.id, { [field]: value });
-    }
+  const handleFieldChange = (path: string, value: any) => {
+      if (!editableMethod) return;
+      setEditableMethod(current => produce(current!, draft => {
+          if(!draft) return;
+          const keys = path.split('.');
+          let currentPath: any = draft;
+          for (let i = 0; i < keys.length - 1; i++) {
+              currentPath = currentPath[keys[i]];
+          }
+          currentPath[keys[keys.length - 1]] = value;
+      }));
   };
-  
-  const handleSaveDataField = (field: keyof CompostingMethodData, value: string | number | undefined) => {
-    if (method) {
-      const updatedData = { ...method.data, [field]: value };
-      onUpdateMethod(method.id, { data: updatedData });
-    }
-  };
-  
+
   const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!method) return;
+    if (!editableMethod) return;
     const file = event.target.files?.[0];
     if (file) {
       try {
         setAppError(null);
         const base64 = await convertFileToBase64(file);
-        setImageObjectPositionY(50); // Reset position for new image
-        handleSaveDataField('imageUrl', base64);
-        handleSaveDataField('image_object_position_y', 50); // Explicitly save reset position
+        handleFieldChange('data.imageUrl', base64);
+        handleFieldChange('data.image_object_position_y', 50);
       } catch (err) {
-        console.error("Error converting file to base64:", err);
-        setAppError("Failed to update image. Please try another file.");
+        setAppError("Failed to update image.");
       }
     }
   };
 
   const handleImagePositionChange = (direction: 'up' | 'down' | 'reset') => {
-    if (!method) return;
-    let newPosition = imageObjectPositionY;
+    if (!editableMethod) return;
+    let newPosition = editableMethod.data.image_object_position_y || 50;
     const step = 5;
-    if (direction === 'up') {
-      newPosition = Math.max(0, imageObjectPositionY - step);
-    } else if (direction === 'down') {
-      newPosition = Math.min(100, imageObjectPositionY + step);
-    } else if (direction === 'reset') {
-      newPosition = 50;
-    }
-    setImageObjectPositionY(newPosition);
-    handleSaveDataField('image_object_position_y', newPosition);
+    if (direction === 'up') newPosition = Math.max(0, newPosition - step);
+    else if (direction === 'down') newPosition = Math.min(100, newPosition + step);
+    else newPosition = 50;
+    handleFieldChange('data.image_object_position_y', newPosition);
   };
+
+  const handleSave = () => {
+    if (initialMethod && editableMethod) {
+      onUpdateMethod(initialMethod.id, editableMethod);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditableMethod(initialMethod);
+  };
+
+  const method = editableMethod || initialMethod;
 
   if (!method) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center p-8 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800">
-        <CubeTransparentIcon className={`w-24 h-24 text-${moduleConfig.baseColorClass}-400 mb-6`} />
-        <h2 className="text-3xl font-semibold text-slate-700 dark:text-slate-200 mb-2">CompostCorner</h2>
+      <div className="flex flex-col items-center justify-center h-full text-center p-8 text-[#A67C52] bg-white">
+        <CubeTransparentIcon className="w-24 h-24 text-[#6C8C61] mb-6" />
+        <h2 className="text-3xl font-semibold text-[#1D3117] mb-2">CompostCorner</h2>
         <p className="text-lg">Select a composting method from the list to view its details, or add a new one.</p>
       </div>
     );
@@ -113,7 +120,7 @@ const CompostingMethodDetailView: React.FC<CompostingMethodDetailViewProps> = ({
   const renderEditableDataField = (fieldKey: keyof CompostingMethodData, isTextarea: boolean = true, placeholder?: string, labelTextOverride?: string): React.ReactNode => (
     <EditableText
       currentValue={String(method.data[fieldKey] ?? '')}
-      onSave={(val) => handleSaveDataField(fieldKey, val)}
+      onSave={(val) => handleFieldChange(`data.${fieldKey}`, val)}
       textarea={isTextarea}
       placeholder={placeholder || `Details about ${COMPOSTING_METHOD_LABELS[fieldKey]?.toLowerCase()}...`}
       labelText={labelTextOverride || COMPOSTING_METHOD_LABELS[fieldKey]}
@@ -121,13 +128,15 @@ const CompostingMethodDetailView: React.FC<CompostingMethodDetailViewProps> = ({
       disabled={!isEditing || !user}
     />
   );
+  
+  const imageObjectPositionY = method.data.image_object_position_y || 50;
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 h-full overflow-y-auto bg-white dark:bg-slate-800 custom-scrollbar">
+    <div className="p-4 md:p-6 lg:p-8 h-full overflow-y-auto bg-white custom-scrollbar">
       {isCompactView && method && onDeselect && !isEditing && (
         <button
           onClick={onDeselect}
-          className={`mb-4 flex items-center px-4 py-2 text-sm font-medium bg-slate-100 dark:bg-slate-700 text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-${moduleConfig.baseColorClass}-500`}
+          className={`mb-4 flex items-center px-4 py-2 text-sm font-medium bg-[#E5E3DD] text-[#6C8C61] hover:bg-[#DCEFD6] rounded-full shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#6C8C61]`}
           aria-label="Back to composting methods list"
         >
           <ChevronLeftIcon className="w-5 h-5 mr-2" />
@@ -135,13 +144,13 @@ const CompostingMethodDetailView: React.FC<CompostingMethodDetailViewProps> = ({
         </button>
       )}
       <div className="max-w-4xl mx-auto space-y-5">
-        <div className={`p-5 bg-slate-100 dark:bg-slate-800/50 shadow-sm rounded-2xl`}>
+        <div className={`p-5 bg-[#FDFCF9] shadow-sm rounded-2xl`}>
            <div className="flex flex-col md:flex-row items-start gap-5">
             <div className="relative group/imgcontrol flex-shrink-0">
                 <img 
                 src={method.data.imageUrl || `https://picsum.photos/seed/${method.method_name.trim().toLowerCase().replace(/\s+/g, '-')}/200/200`} 
                 alt={method.method_name} 
-                className={`w-32 h-32 md:w-36 md:h-36 rounded-2xl object-cover border-4 border-${moduleConfig.baseColorClass}-300 dark:border-${moduleConfig.baseColorClass}-600 shadow-lg`}
+                className={`w-32 h-32 md:w-36 md:h-36 rounded-2xl object-cover border-4 border-[#DCEFD6] shadow-lg`}
                 style={{ objectPosition: `50% ${imageObjectPositionY}%`}}
                  onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -162,7 +171,7 @@ const CompostingMethodDetailView: React.FC<CompostingMethodDetailViewProps> = ({
                         <button 
                             onClick={() => imageInputRef.current?.click()}
                             title="Change method image"
-                            className={`absolute bottom-2 right-2 p-2 bg-slate-50 dark:bg-slate-700 rounded-full shadow-md opacity-0 group-hover/imgcontrol:opacity-100 transition-opacity hover:bg-slate-200 dark:hover:bg-slate-600 text-${moduleConfig.baseColorClass}-600 dark:text-${moduleConfig.baseColorClass}-300`}
+                            className={`absolute bottom-2 right-2 p-2 bg-white rounded-full shadow-md opacity-0 group-hover/imgcontrol:opacity-100 transition-opacity hover:bg-[#E5E3DD] text-[#6C8C61]`}
                             aria-label="Edit method image"
                         >
                             <PencilIcon className="w-5 h-5" />
@@ -180,18 +189,18 @@ const CompostingMethodDetailView: React.FC<CompostingMethodDetailViewProps> = ({
             <div className="flex-grow">
              <EditableText
                   currentValue={method.method_name}
-                  onSave={(val) => handleSaveDirectField('method_name', val)}
+                  onSave={(val) => handleFieldChange('method_name', val)}
                   labelText="Method Name"
-                  textClassName={`text-2xl md:text-3xl font-medium text-${moduleConfig.baseColorClass}-600 dark:text-${moduleConfig.baseColorClass}-400 mb-2`}
-                  inputFieldClass={`text-2xl md:text-3xl font-medium text-${moduleConfig.baseColorClass}-600 dark:text-${moduleConfig.baseColorClass}-400`}
+                  textClassName={`text-2xl md:text-3xl font-medium text-[#6C8C61] mb-2`}
+                  inputFieldClass={`text-2xl md:text-3xl font-medium text-[#6C8C61]`}
                   disabled={!isEditing || !user}
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                <EditableText currentValue={method.primary_composting_approach} onSave={(val) => handleSaveDirectField('primary_composting_approach', val)} labelText="Approach" textarea={false} textSize="text-sm" disabled={!isEditing || !user}/>
+                <EditableText currentValue={method.primary_composting_approach} onSave={(val) => handleFieldChange('primary_composting_approach', val)} labelText="Approach" textarea={false} textSize="text-sm" disabled={!isEditing || !user}/>
                 {renderEditableDataField('complexity', false, undefined, "Complexity")}
               </div>
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-2">
-                <EditableText currentValue={method.scale_of_operation} onSave={(val) => handleSaveDirectField('scale_of_operation', val)} labelText="Scale" textarea={false} textSize="text-sm" disabled={!isEditing || !user}/>
+                <EditableText currentValue={method.scale_of_operation} onSave={(val) => handleFieldChange('scale_of_operation', val)} labelText="Scale" textarea={false} textSize="text-sm" disabled={!isEditing || !user}/>
                 {renderEditableDataField('timeToMature', false, "e.g., 2-3 months", "Time to Mature")}
               </div>
             </div>
@@ -239,15 +248,15 @@ const CompostingMethodDetailView: React.FC<CompostingMethodDetailViewProps> = ({
         </SectionCard>
       </div>
       {user && (
-            <div className="sticky bottom-0 right-0 w-full p-4 bg-gradient-to-t from-white dark:from-slate-800 to-transparent flex justify-end">
+            <div className="sticky bottom-0 right-0 w-full p-4 bg-gradient-to-t from-white to-transparent flex justify-end">
                 {!isEditing ? (
-                    <button onClick={() => setIsEditing(true)} className="px-5 py-2.5 bg-slate-700 text-white rounded-full shadow-lg hover:bg-slate-800 flex items-center gap-2">
+                    <button onClick={() => setIsEditing(true)} className="px-5 py-2.5 bg-[#1D3117] text-white rounded-full shadow-lg hover:bg-[#3D2A15] flex items-center gap-2">
                         <PencilIcon className="w-5 h-5"/> Edit Details
                     </button>
                 ) : (
                     <div className="flex gap-3">
-                        <button onClick={() => { setIsEditing(false); onUpdateMethod(method.id, method); }} className="px-5 py-2.5 bg-slate-200 text-slate-800 rounded-full shadow-lg hover:bg-slate-300">Cancel</button>
-                        <button onClick={() => setIsEditing(false)} className="px-5 py-2.5 bg-emerald-600 text-white rounded-full shadow-lg hover:bg-emerald-700">Save Changes</button>
+                        <button onClick={handleCancel} className="px-5 py-2.5 bg-[#E5E3DD] text-[#2C2C2C] rounded-full shadow-lg hover:bg-[#DCEFD6]">Cancel</button>
+                        <button onClick={handleSave} className="px-5 py-2.5 bg-[#6C8C61] text-white rounded-full shadow-lg hover:bg-[#5a7850]">Save Changes</button>
                     </div>
                 )}
             </div>

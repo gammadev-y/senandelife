@@ -1,6 +1,4 @@
 
-
-
 import { ai, geminiModel } from '../../../../services/gemini';
 import { Plant, PlantSectionKeyForAI, RawPlantDataFromAI, EventType } from '../types';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -99,7 +97,7 @@ const plantNutritionFertilizationNeedsSchema = {
 };
 
 const growthStageTimelineEntrySchema = { type: Type.OBJECT, properties: { expected_min_days: { type: Type.NUMBER }, expected_max_days: { type: Type.NUMBER }, optimal_average_days: { type: Type.NUMBER }, event_description_notes: { type: Type.STRING } } };
-const growthStageTimelinesDaysFromSowingSchema = { type: Type.OBJECT, properties: { sprouting: growthStageTimelineEntrySchema, first_true_leaves: growthStageTimelineEntrySchema, first_repotting_seedling: { ...growthStageTimelineEntrySchema, properties: { ...growthStageTimelineEntrySchema.properties, pot_size_increase_factor_guideline: { type: Type.NUMBER, nullable: true } } }, hardening_off_start: growthStageTimelineEntrySchema, transplant_outdoors_seedling: growthStageTimelineEntrySchema, first_fertilization_after_true_leaves: { ...growthStageTimelineEntrySchema, properties: { ...growthStageTimelineEntrySchema.properties, trigger_condition: { type: Type.STRING } } }, first_pruning_formative: growthStageTimelineEntrySchema, flowering_start: growthStageTimelineEntrySchema, first_harvest_expected: growthStageTimelineEntrySchema } };
+const growthStageTimelinesDaysFromSowingSchema = { type: Type.OBJECT, properties: { sprouting: growthStageTimelineEntrySchema, first_true_leaves: growthStageTimelineEntrySchema, first_repotting_seedling: { type: Type.OBJECT, properties: { ...growthStageTimelineEntrySchema.properties, pot_size_increase_factor_guideline: { type: Type.NUMBER, nullable: true } } }, hardening_off_start: growthStageTimelineEntrySchema, transplant_outdoors_seedling: growthStageTimelineEntrySchema, first_fertilization_after_true_leaves: { type: Type.OBJECT, properties: { ...growthStageTimelineEntrySchema.properties, trigger_condition: { type: Type.STRING } } }, first_pruning_formative: growthStageTimelineEntrySchema, flowering_start: growthStageTimelineEntrySchema, first_harvest_expected: growthStageTimelineEntrySchema } };
 const pestInteractionItemSchema = { type: Type.OBJECT, properties: { pest_name: { type: Type.STRING }, notes: { type: Type.STRING, nullable: true }}};
 const diseaseSusceptibilityItemSchema = { type: Type.OBJECT, properties: { disease_name: { type: Type.STRING }, symptoms_notes: { type: Type.STRING, nullable: true }}};
 const companionPlantingItemSchema = { type: Type.OBJECT, properties: { plant_name_or_id: { type: Type.STRING }, benefit_provided: { type: Type.STRING, nullable: true }, benefit_received: { type: Type.STRING, nullable: true }, reason: { type: Type.STRING, nullable: true }}};
@@ -116,7 +114,88 @@ const optimalSeedStorageConditionsSchema = { type: Type.OBJECT, properties: { te
 const seedSavingStorageDetailsSchema = { type: Type.OBJECT, properties: { seed_viability_duration_years_optimal: { type: Type.STRING, nullable: true }, harvesting_seeds_guide: seedSavingHarvestingGuideSchema, cleaning_drying_seeds_techniques: { type: Type.STRING, nullable: true }, optimal_storage_conditions: optimalSeedStorageConditionsSchema, seed_viability_testing_methods_description: { type: Type.ARRAY, items: { type: Type.STRING } } } };
 const pruningShapingSchema = { type: Type.OBJECT, properties: { pruning_objectives: { type: Type.ARRAY, items: { type: Type.STRING } }, best_times_for_pruning_seasonal: { type: Type.ARRAY, items: { type: Type.STRING } }, pruning_techniques_description: { type: Type.STRING, nullable: true }, tools_recommended: { type: Type.ARRAY, items: { type: Type.STRING } }, pruning_notes_detailed: { type: Type.STRING, nullable: true }}};
 const repottingSchema = { type: Type.OBJECT, nullable: true, properties: { repotting_frequency_indicators: { type: Type.STRING, nullable: true }, best_time_for_repotting: { type: Type.STRING, nullable: true }, repotting_instructions: { type: Type.STRING, nullable: true }}};
-const propagationMethodsSummarySchema = { type: Type.OBJECT, properties: { primary_methods: { type: Type.ARRAY, items: { type: Type.STRING } }, seed_propagation_details: { type: Type.OBJECT, properties: { is_applicable: { type: Type.BOOLEAN }, brief_sowing_and_early_care_steps: { type: Type.ARRAY, items: { type: Type.STRING } } } }, cutting_propagation_details: { type: Type.OBJECT, properties: { is_applicable: { type: Type.BOOLEAN }, brief_step_by_step_overview: { type: Type.ARRAY, items: { type: Type.STRING } } } }, grafting_propagation_details: { type: Type.OBJECT, properties: { is_applicable: { type: Type.BOOLEAN }, brief_step_by_step_overview: { type: Type.ARRAY, items: { type: Type.STRING } } } } } };
+
+const seedPropagationDetailsSchema = {
+    type: Type.OBJECT,
+    properties: {
+        is_applicable: { type: Type.BOOLEAN },
+        brief_sowing_and_early_care_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+        expected_success_rate_notes: { type: Type.STRING, nullable: true },
+        recommended_sowing_time_season: { type: Type.STRING, nullable: true },
+        pre_germination_treatment: { type: Type.OBJECT, properties: { soaking_seeds_details: { type: Type.STRING, nullable: true }, scarification_details: { type: Type.STRING, nullable: true }, stratification_details: { type: Type.STRING, nullable: true } } },
+        germination_requirements_detailed: { type: Type.OBJECT, properties: {
+            seed_depth_cm: { type: Type.OBJECT, properties: { min: { type: Type.NUMBER }, max: { type: Type.NUMBER }, notes: { type: Type.STRING, nullable: true } } },
+            soil_temperature_celsius: { type: Type.OBJECT, properties: { optimal_min: { type: Type.NUMBER }, optimal_max: { type: Type.NUMBER }, absolute_min_for_germination: { type: Type.NUMBER }, absolute_max_for_germination: { type: Type.NUMBER }, notes: { type: Type.STRING, nullable: true } } },
+            soil_mix_recommendation: { type: Type.STRING },
+            soil_moisture_level_description: { type: Type.STRING },
+            watering_method_germination: { type: Type.STRING },
+            humidity_percentage_germination: { type: Type.OBJECT, properties: { optimal_min: { type: Type.NUMBER }, optimal_max: { type: Type.NUMBER } } },
+            light_for_germination_requirement: { type: Type.STRING },
+            expected_germination_timeframe_days_range: { type: Type.STRING, nullable: true },
+        }},
+        early_seedling_phase_water_management_sprout_to_8_weeks: { type: Type.OBJECT, properties: {
+            target_medium_moisture_level_description: { type: Type.STRING, nullable: true },
+            recommended_watering_method: { type: Type.ARRAY, items: { type: Type.STRING } },
+            watering_frequency_guidance: { type: Type.STRING, nullable: true },
+            approximate_amount_of_water_per_application: { type: Type.STRING, nullable: true },
+            importance_of_good_drainage_notes: { type: Type.STRING, nullable: true },
+            water_temperature_consideration_celsius: { type: Type.STRING, nullable: true },
+            soil_temperature_considerations_after_watering: { type: Type.STRING, nullable: true },
+            humidity_considerations_acclimation: { type: Type.STRING, nullable: true },
+            signs_of_overwatering_seedlings: { type: Type.ARRAY, items: { type: Type.STRING } },
+            signs_of_underwatering_seedlings: { type: Type.ARRAY, items: { type: Type.STRING } },
+            transitioning_watering_practices_notes: { type: Type.STRING, nullable: true },
+        }},
+        other_early_seedling_care_sprout_to_8_weeks: { type: Type.OBJECT, properties: {
+            light_requirements_for_seedlings_hours_type: { type: Type.STRING, nullable: true },
+            temperature_requirements_for_seedlings_celsius: { type: Type.OBJECT, properties: { day_min: { type: Type.NUMBER, nullable: true }, day_max: { type: Type.NUMBER, nullable: true }, night_min: { type: Type.NUMBER, nullable: true }, night_max: { type: Type.NUMBER, nullable: true } } },
+            ventilation_needs_description: { type: Type.STRING, nullable: true },
+            first_fertilization_details: { type: Type.STRING, nullable: true },
+            hardening_off_procedure_within_8_weeks: { type: Type.STRING, nullable: true },
+        }},
+    }
+};
+
+const cuttingPropagationDetailsSchema = {
+    type: Type.OBJECT,
+    properties: {
+        is_applicable: { type: Type.BOOLEAN },
+        cutting_types_common: { type: Type.ARRAY, items: { type: Type.STRING } },
+        best_time_for_cuttings_by_type: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING }, timing_season: { type: Type.STRING } } } },
+        brief_step_by_step_overview: { type: Type.ARRAY, items: { type: Type.STRING } },
+        cutting_preparation_notes: { type: Type.STRING, nullable: true },
+        rooting_medium_recommendations: { type: Type.ARRAY, items: { type: Type.STRING } },
+        environmental_conditions_for_rooting_notes: { type: Type.STRING, nullable: true },
+        expected_rooting_timeframe_weeks_range: { type: Type.STRING, nullable: true },
+        aftercare_once_rooted_instructions: { type: Type.STRING, nullable: true },
+        expected_success_rate_notes: { type: Type.STRING, nullable: true },
+        common_challenges: { type: Type.ARRAY, items: { type: Type.STRING } },
+    }
+};
+
+const graftingPropagationDetailsSchema = {
+    type: Type.OBJECT,
+    properties: {
+        is_applicable: { type: Type.BOOLEAN },
+        common_grafting_types_used: { type: Type.ARRAY, items: { type: Type.STRING } },
+        best_time_for_grafting_by_type: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING }, timing_season: { type: Type.STRING } } } },
+        brief_step_by_step_overview: { type: Type.ARRAY, items: { type: Type.STRING } },
+        rootstock_selection_considerations: { type: Type.STRING, nullable: true },
+        scion_selection_considerations: { type: Type.STRING, nullable: true },
+        tools_materials_needed: { type: Type.ARRAY, items: { type: Type.STRING } },
+        aftercare_instructions_detailed: { type: Type.STRING, nullable: true },
+        expected_success_rate_notes: { type: Type.STRING, nullable: true },
+        common_challenges: { type: Type.ARRAY, items: { type: Type.STRING } },
+    }
+};
+
+const propagationMethodsSummarySchema = { type: Type.OBJECT, properties: { 
+    primary_methods: { type: Type.ARRAY, items: { type: Type.STRING } }, 
+    seed_propagation_details: seedPropagationDetailsSchema,
+    cutting_propagation_details: cuttingPropagationDetailsSchema,
+    grafting_propagation_details: graftingPropagationDetailsSchema
+} };
+
 const plantCareMaintenanceSchema = { type: Type.OBJECT, properties: { pruning_shaping: pruningShapingSchema, repotting_for_container_plants: repottingSchema, root_strengthening_techniques: { type: Type.ARRAY, items: { type: Type.STRING } }, propagation_methods_summary: propagationMethodsSummarySchema } };
 
 const fullPlantSchema = {

@@ -6,12 +6,16 @@
 
 
 
+
+
+
+
 export type Json =
   | string
   | number
   | boolean
   | null
-  | { [key: string]: Json | undefined }
+  | { [key: string]: Json }
   | Json[];
 
 export type PlantCalendarTaskType = 'SowIndoors' | 'SowOutdoors' | 'Transplant' | 'Prune' | 'Fertilize' | 'Harvest' | 'Maintenance' | 'Germinate' | 'FlowerWatch' | 'FruitWatch' | 'SeedCollect' | 'Other';
@@ -520,6 +524,7 @@ export interface Plant {
 
 // Represents the data stored in the 'data' JSONB column of the flora_pedia table.
 export interface PlantJsonData {
+  [key: string]: any; // To ensure compatibility with Supabase Json type
   display_image_url: string | null;
   image_object_position_y?: number;
   plant_identification_overview: PlantIdentificationOverview;
@@ -585,6 +590,7 @@ export interface FloraPediaTableRow {
 
 // NutriBase (Fertilizers)
 export interface FertilizerData {
+  [key: string]: any; // To ensure compatibility with Supabase Json type
   imageUrl?: string | null;
   image_object_position_y?: number;
   description: string;
@@ -630,6 +636,7 @@ export interface FertilizerInput {
 
 // CompostCorner (Composting Methods)
 export interface CompostingMethodData {
+  [key: string]: any; // To ensure compatibility with Supabase Json type
   imageUrl?: string | null;
   image_object_position_y?: number;
   description: string;
@@ -700,6 +707,7 @@ export interface GroundLogEntry {
 
 // This interface represents the 'data' JSONB column for growing_grounds
 export interface GrowingGroundData {
+  [key: string]: any; // To ensure compatibility with Supabase Json type
   description: string;
   type: 'Raised Bed' | 'Ground Bed' | 'Pot' | 'Container' | 'Vertical Garden' | 'Greenhouse Bed' | 'Hydroponics' | 'Aquaponics' | 'Other';
   imageUrl?: string | null;
@@ -735,6 +743,7 @@ export interface GrowingGroundInput {
 export type SeasonalTipContentType = 'url' | 'article';
 
 export interface TipImage {
+  [key: string]: any; // To ensure compatibility with Supabase Json type
   url: string;
   object_position_y?: number;
 }
@@ -879,6 +888,7 @@ export interface WeatherLocationPreference {
 export type ThemeSetting = 'light' | 'dark' | 'system';
 
 export interface UserPreferences {
+  [key: string]: any; // To ensure compatibility with Supabase Json type
   theme?: ThemeSetting;
   weather?: WeatherLocationPreference | null;
   // Add other preferences here as needed

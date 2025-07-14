@@ -1,7 +1,8 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-A">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Jarden - Your Plant Knowledge Hub</title>
 
@@ -10,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  
   <style>
     html {
       scroll-behavior: smooth;
@@ -18,20 +20,15 @@
         font-family: 'Roboto', sans-serif;
          min-height: 100vh; 
          margin: 0;
-         /* Material 3 Surface Colors using Slate palette */
-         background-color: #f1f5f9; /* slate-100 (M3 Surface Container Low / Background) */
-         color: #1e293b; /* slate-800 (M3 OnSurface / OnBackground) */
-    }
-    @media (prefers-color-scheme: dark) {
-      body {
-        background-color: #0f172a; /* slate-900 (M3 Surface Container Lowest / Background) */
-        color: #e2e8f0; /* slate-200 (M3 OnSurface / OnBackground) */
-      }
+         /* New Jarden background and text color */
+         background-color: #fdfcf9;
+         background-image: url("https://www.transparenttextures.com/patterns/exclusive-paper.png");
+         color: #2C2C2C; /* onBackground */
     }
     #root, .app-container {
         height: 100%;
     }
-    /* Custom scrollbar for webkit browsers - M3 subtle style using Slate */
+    /* Custom scrollbar for webkit browsers - M3 subtle style using new palette */
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
@@ -40,15 +37,15 @@
       background: transparent; 
     }
     ::-webkit-scrollbar-thumb {
-      background: #94a3b8; /* slate-400 (M3 OutlineVariant / Scrollbar color) */
+      background: #B6B6B6; /* outline */
       border-radius: 4px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #64748b; /* slate-500 */
+      background: #A67C52; /* secondary */
     }
     .custom-scrollbar {
         scrollbar-width: thin;
-        scrollbar-color: #94a3b8 transparent; /* slate-400 */
+        scrollbar-color: #B6B6B6 transparent;
     }
 
     /* Ripple effect for buttons/list items (basic) - M3 uses state layers */
@@ -77,6 +74,40 @@
       opacity: .1; /* M3 state layer opacity */
       transition: 0s;
     }
+    
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        transition: font-variation-settings 0.3s ease-in-out;
+    }
+
+    /* Loading Animation Keyframes */
+    @keyframes tip-watering-can {
+        0%, 100% { transform: rotate(-10deg); }
+        50% { transform: rotate(25deg); }
+    }
+
+    @keyframes pour-water {
+        0%, 100% { opacity: 0; transform: translateY(-20px) scaleY(0.5); }
+        40% { opacity: 1; transform: translateY(0) scaleY(1); }
+        70% { opacity: 1; transform: translateY(0) scaleY(1); }
+        90% { opacity: 0; transform: translateY(0) scaleY(0.5); }
+    }
+
+    @keyframes fill-water-bar {
+        from { width: 0%; }
+        to { width: 100%; }
+    }
+    
+    @keyframes slide-in-from-left-subtle {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
 
   </style>
 
@@ -90,7 +121,7 @@
     "@heroicons/react/": "https://esm.sh/@heroicons/react@^2.2.0/",
     "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
     "vite": "https://esm.sh/vite@^6.3.5",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.50.0",
+    "@supabase/supabase-js": "https://esm.sh/supabase-js@^2.50.0",
     "@google/genai": "https://esm.sh/@google/genai@^1.6.0",
     "react-markdown": "https://esm.sh/react-markdown@^10.1.0",
     "browser-image-compression": "https://esm.sh/browser-image-compression@^2.0.2",
@@ -100,7 +131,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+<body>
   <div id="root"></div>
   <script type="module" src="/src/index.tsx"></script>
 <script type="module" src="/index.tsx"></script>

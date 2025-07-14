@@ -3,6 +3,8 @@
 
 
 
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -37,30 +39,30 @@ interface HomePageCardProps {
   to?: string;
 }
 
-const HomePageCard: React.FC<HomePageCardProps> = ({ title, description, imageUrl, imagePositionY = 50, icon: Icon, onClick, itemType, baseColorClass = 'blue', isLink = false, to = '#' }) => {
+const HomePageCard: React.FC<HomePageCardProps> = ({ title, description, imageUrl, imagePositionY = 50, icon: Icon, onClick, itemType, baseColorClass = 'green', isLink = false, to = '#' }) => {
   
   const renderStockIcon = () => {
-    const stockIconProps = { className: `w-full h-full object-contain p-4 text-${baseColorClass}-400 dark:text-${baseColorClass}-500` };
+    const stockIconProps = { className: `w-full h-full object-contain p-4 text-[#A67C52]` };
     switch (itemType) {
         case 'plant': return <PlantStockIcon {...stockIconProps} />;
         case 'fertilizer': return <BeakerIcon {...stockIconProps} />;
         case 'compost_method': return <CubeTransparentIcon {...stockIconProps} />;
         case 'growing_ground': return <GroundStockIcon {...stockIconProps} />;
         case 'seasonal_tip': return <OutlineLightBulbIcon {...stockIconProps} />;
-        default: return Icon ? <Icon className={`w-10 h-10 text-${baseColorClass}-400 dark:text-${baseColorClass}-500`} /> : <SolidCheckCircleIcon className={`w-10 h-10 text-${baseColorClass}-400 dark:text-${baseColorClass}-500`} />;
+        default: return Icon ? <Icon className={`w-10 h-10 text-[#A67C52]`} /> : <SolidCheckCircleIcon className={`w-10 h-10 text-[#A67C52]`} />;
     }
   };
 
   const CardContent = () => (
      <div 
-      className={`bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden transition-all hover:shadow-xl ${!isLink && 'cursor-pointer active:scale-[0.98]'}`}
+      className={`bg-white border border-[#E5E3DD] rounded-2xl shadow-lg overflow-hidden transition-all hover:shadow-xl ${!isLink && 'cursor-pointer active:scale-[0.98]'}`}
       onClick={!isLink ? onClick : undefined}
       role={!isLink ? "button" : undefined}
       tabIndex={!isLink ? 0 : -1}
       onKeyDown={(e) => !isLink && (e.key === 'Enter' || e.key === ' ') && onClick && onClick()}
       aria-label={`View ${title}`}
     >
-      <div className="w-full h-32 bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
+      <div className="w-full h-32 bg-[#E5E3DD] flex items-center justify-center overflow-hidden">
         {imageUrl ? (
           <img src={imageUrl} alt={title} className="w-full h-full object-cover" style={{ objectPosition: `50% ${imagePositionY}%`}}/>
         ) : (
@@ -69,10 +71,10 @@ const HomePageCard: React.FC<HomePageCardProps> = ({ title, description, imageUr
       </div>
       <div className="p-3 md:p-4">
         <div className="flex items-center mb-1">
-          {Icon && !imageUrl && <Icon className={`w-5 h-5 mr-2 text-${baseColorClass}-600 dark:text-${baseColorClass}-400`} />}
-          <h3 className="text-sm md:text-md font-semibold text-slate-800 dark:text-slate-100 truncate" title={title}>{title}</h3>
+          {Icon && !imageUrl && <Icon className={`w-5 h-5 mr-2 text-[#6C8C61]`} />}
+          <h3 className="text-sm md:text-md font-semibold text-[#2C2C2C] truncate" title={title}>{title}</h3>
         </div>
-        {description && <p className="text-xs md:text-sm text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2">{description}</p>}
+        {description && <p className="text-xs md:text-sm text-[#A67C52] leading-relaxed line-clamp-2">{description}</p>}
       </div>
     </div>
   );
@@ -144,7 +146,7 @@ const HomePage: React.FC<HomePageProps> = ({
   }, [recentViews]);
 
   return (
-    <div className="p-4 md:p-6 space-y-6 bg-slate-50 dark:bg-slate-900"> {/* Overall padding and spacing */}
+    <div className="p-4 md:p-6 space-y-6"> {/* Overall padding and spacing */}
       
       <div className="print:hidden"> {/* WeatherBanner container */}
          <WeatherBanner 
@@ -155,28 +157,28 @@ const HomePage: React.FC<HomePageProps> = ({
 
       {/* Section 1: Today's Tasks */}
       <section>
-        <h2 className="text-lg font-semibold mb-3 text-slate-700 dark:text-slate-200 px-1">Today's Tasks ({today.toLocaleDateString(undefined, { month: 'short', day: 'numeric'})})</h2>
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-4">
+        <h2 className="text-lg font-semibold mb-3 text-[#1D3117] px-1">Today's Tasks ({today.toLocaleDateString(undefined, { month: 'short', day: 'numeric'})})</h2>
+        <div className="bg-white border border-[#E5E3DD] rounded-2xl shadow-lg p-4">
           {todaysTasks.length === 0 ? (
-            <div className="flex items-center text-green-600 dark:text-green-400">
+            <div className="flex items-center text-[#6C8C61]">
               <SolidCheckCircleIcon className="w-7 h-7 mr-2.5 flex-shrink-0" />
               <p className="text-md font-medium">You're all caught up! No pressing tasks for today.</p>
             </div>
           ) : (
             <ul className="space-y-2.5">
               {todaysTasks.slice(0,3).map(task => { 
-                const colorHex = task.event_types?.color_code || '#6b7280';
+                const colorHex = task.event_types?.color_code || '#B6B6B6';
                 return (
-                  <li key={task.id} className="flex items-start p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-lg" style={{ borderLeft: `4px solid ${colorHex}`}}>
+                  <li key={task.id} className="flex items-start p-2.5 bg-[#FDFCF9] rounded-lg" style={{ borderLeft: `4px solid ${colorHex}`}}>
                     <span className="w-6 text-xl flex items-center justify-center mr-3 flex-shrink-0">{task.event_types?.icon_name || '📝'}</span>
                     <div>
-                      <p className={`text-sm font-medium text-slate-800 dark:text-slate-100`}>{task.title}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{task.event_types?.name}</p>
+                      <p className={`text-sm font-medium text-[#2C2C2C]`}>{task.title}</p>
+                      <p className="text-xs text-[#A67C52]">{task.event_types?.name}</p>
                     </div>
                   </li>
                 );
               })}
-              {todaysTasks.length > 3 && <p className="text-xs text-center text-slate-500 dark:text-slate-400 pt-2">...and {todaysTasks.length - 3} more. View Tasks page for all.</p>}
+              {todaysTasks.length > 3 && <p className="text-xs text-center text-[#A67C52] pt-2">...and {todaysTasks.length - 3} more. View Tasks page for all.</p>}
             </ul>
           )}
         </div>
@@ -185,22 +187,22 @@ const HomePage: React.FC<HomePageProps> = ({
       {/* Separator and Section 2: Rest of Week */}
       {restOfWeekTasks.length > 0 && (
         <>
-          <hr className="border-slate-200 dark:border-slate-700"/>
+          <hr className="border-[#E5E3DD]"/>
           <section>
-            <h2 className="text-lg font-semibold mb-3 text-slate-700 dark:text-slate-200 px-1">Rest of the Week</h2>
-             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-4">
+            <h2 className="text-lg font-semibold mb-3 text-[#1D3117] px-1">Rest of the Week</h2>
+             <div className="bg-white border border-[#E5E3DD] rounded-2xl shadow-lg p-4">
                 <ul className="space-y-2.5 max-h-60 overflow-y-auto custom-scrollbar pr-1">
                     {restOfWeekTasks.map(task => {
-                        const colorHex = task.event_types?.color_code || '#6b7280';
+                        const colorHex = task.event_types?.color_code || '#B6B6B6';
                         return (
-                            <li key={task.id} className="flex items-start p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-lg" style={{ borderLeft: `4px solid ${colorHex}`}}>
+                            <li key={task.id} className="flex items-start p-2.5 bg-[#FDFCF9] rounded-lg" style={{ borderLeft: `4px solid ${colorHex}`}}>
                             <span className="w-6 text-xl flex items-center justify-center mr-3 flex-shrink-0">{task.event_types?.icon_name || '📝'}</span>
                             <div>
                                 <div className="flex justify-between items-baseline">
-                                    <p className={`text-sm font-medium text-slate-800 dark:text-slate-100`}>{task.title}</p>
-                                    <p className="text-xs text-slate-400 dark:text-slate-500 ml-2">{new Date(task.start_date).toLocaleDateString(undefined, { weekday: 'short' })}</p>
+                                    <p className={`text-sm font-medium text-[#2C2C2C]`}>{task.title}</p>
+                                    <p className="text-xs text-[#A67C52] ml-2">{new Date(task.start_date).toLocaleDateString(undefined, { weekday: 'short' })}</p>
                                 </div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">{task.event_types?.name}</p>
+                                <p className="text-xs text-[#A67C52]">{task.event_types?.name}</p>
                             </div>
                             </li>
                         );
@@ -212,10 +214,10 @@ const HomePage: React.FC<HomePageProps> = ({
       )}
 
       {/* Separator and Section 3: Recently Viewed */}
-      <hr className="border-slate-200 dark:border-slate-700"/>
+      <hr className="border-[#E5E3DD]"/>
       <section>
-        <h2 className="text-lg font-semibold mb-3 text-slate-700 dark:text-slate-200 px-1 flex items-center">
-          <OutlineClockIcon className="w-5 h-5 mr-2 text-slate-500 dark:text-slate-400" />
+        <h2 className="text-lg font-semibold mb-3 text-[#1D3117] px-1 flex items-center">
+          <OutlineClockIcon className="w-5 h-5 mr-2 text-[#A67C52]" />
           Quick Access
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -235,13 +237,13 @@ const HomePage: React.FC<HomePageProps> = ({
       {/* Separator and Section 4: Seasonal Tips */}
       {latestSeasonalTips.length > 0 && (
         <>
-          <hr className="border-slate-200 dark:border-slate-700"/>
+          <hr className="border-[#E5E3DD]"/>
           <section>
             <button 
               onClick={() => onNavigateToModule('seasonaltips')}
-              className="w-full group text-left text-lg font-semibold mb-3 text-slate-700 dark:text-slate-200 px-1 hover:text-orange-600 dark:hover:text-orange-400 transition-colors flex items-center"
+              className="w-full group text-left text-lg font-semibold mb-3 text-[#1D3117] px-1 hover:text-[#6C8C61] transition-colors flex items-center"
             >
-              <OutlineLightBulbIcon className="w-5 h-5 mr-2 text-orange-500 dark:text-orange-400 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors"/>
+              <OutlineLightBulbIcon className="w-5 h-5 mr-2 text-[#D87C6C] group-hover:text-[#6C8C61] transition-colors"/>
               Seasonal Tips
               <ChevronRightIcon className="w-4 h-4 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
@@ -266,7 +268,7 @@ const HomePage: React.FC<HomePageProps> = ({
                             });
                         }}
                         itemType="seasonal_tip"
-                        baseColorClass={seasonalTipsModuleConfig.baseColorClass}
+                        baseColorClass={'green'}
                     />
                 ))}
             </div>

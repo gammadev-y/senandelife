@@ -12,7 +12,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({ images }) => {
 
   if (!images || images.length === 0) {
     return (
-        <div className="flex flex-col items-center justify-center p-4 bg-slate-100 dark:bg-slate-700/50 rounded-lg text-slate-500 dark:text-slate-400">
+        <div className="flex flex-col items-center justify-center p-4 bg-[#E5E3DD] rounded-lg text-[#A67C52]">
             <PhotoIcon className="w-8 h-8 mb-2"/>
             <p className="text-sm">No images in this gallery.</p>
         </div>
@@ -52,7 +52,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({ images }) => {
 
   return (
     <div className="w-full relative">
-        <div className="relative h-96 w-full rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-700">
+        <div className="relative h-96 w-full rounded-lg overflow-hidden bg-[#E5E3DD]">
             {images.map((image, index) => (
                 <div key={index} className={`absolute top-0 left-0 w-full h-full transition-opacity duration-500 ease-in-out ${index === currentIndex ? 'opacity-100' : 'opacity-0'}`}>
                     <img src={image.url} alt={image.alt} className="w-full h-full object-contain" />
@@ -77,7 +77,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({ images }) => {
                         <img 
                             src={image.url} 
                             alt={`Thumbnail ${index + 1}`} 
-                            className={`w-20 h-20 rounded-md object-cover border-2 transition-all ${currentIndex === index ? 'border-emerald-500' : 'border-transparent hover:border-slate-400'}`}
+                            className={`w-20 h-20 rounded-md object-cover border-2 transition-all ${currentIndex === index ? 'border-[#6C8C61]' : 'border-transparent hover:border-[#B6B6B6]'}`}
                         />
                     </div>
                 ))}

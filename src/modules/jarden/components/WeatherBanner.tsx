@@ -32,11 +32,11 @@ const WeatherIconMap: Record<string, React.ElementType> = {
 };
 
 const getTemperatureColor = (temp: number): string => {
-    if (temp < 5) return 'text-blue-500 dark:text-blue-400'; 
-    if (temp < 12) return 'text-sky-500 dark:text-sky-400';    
-    if (temp < 18) return 'text-slate-700 dark:text-slate-200'; 
-    if (temp < 25) return 'text-yellow-500 dark:text-yellow-400'; 
-    return 'text-orange-500 dark:text-orange-400'; 
+    if (temp < 5) return 'text-blue-500'; 
+    if (temp < 12) return 'text-sky-500';    
+    if (temp < 18) return 'text-[#A67C52]'; 
+    if (temp < 25) return 'text-yellow-600'; 
+    return 'text-orange-600'; 
 };
 
 const DayForecastCard: React.FC<{ forecast: DailyForecast; isToday: boolean }> = ({ forecast, isToday }) => {
@@ -47,14 +47,14 @@ const DayForecastCard: React.FC<{ forecast: DailyForecast; isToday: boolean }> =
   const avgTemp = (forecast.minTemp + forecast.maxTemp) / 2;
 
   return (
-    <div className="flex flex-col items-center p-2 bg-slate-100/60 dark:bg-slate-800/50 rounded-lg shadow-sm text-center min-w-[70px] md:min-w-[85px]">
-      <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{dayName}</p>
-      <WeatherIcon className="w-5 h-5 md:w-6 md:h-6 my-1 text-slate-600 dark:text-slate-300" title={description}/>
+    <div className="flex flex-col items-center p-2 bg-[#F3E1D2]/50 rounded-lg shadow-sm text-center min-w-[70px] md:min-w-[85px]">
+      <p className="text-xs font-medium text-[#3D2A15]">{dayName}</p>
+      <WeatherIcon className="w-5 h-5 md:w-6 md:h-6 my-1 text-[#3D2A15]" title={description}/>
       <p className={`text-sm font-semibold ${getTemperatureColor(avgTemp)}`}>
-        {forecast.minTemp.toFixed(0)}°<span className="text-slate-500 dark:text-slate-400">-{forecast.maxTemp.toFixed(0)}°</span>
+        {forecast.minTemp.toFixed(0)}°<span className="text-[#A67C52]">-{forecast.maxTemp.toFixed(0)}°</span>
       </p>
       {(forecast.minHumidity !== undefined && forecast.maxHumidity !== undefined) && (
-        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
+        <p className="text-[10px] text-[#A67C52] mt-0.5 leading-tight">
           <WifiIcon className="w-2.5 h-2.5 inline-block mr-0.5 -mt-0.5 text-sky-500" />
            {forecast.minHumidity}%-{forecast.maxHumidity}%
         </p>
@@ -182,23 +182,23 @@ const WeatherBanner: React.FC<WeatherBannerProps> = ({ weatherLocationPreference
 
   if (isLoading) {
     return (
-      <div className="p-3 rounded-lg flex items-center justify-center h-24">
-        <LoadingSpinner size="sm" color="text-slate-600 dark:text-slate-300"/> 
-        <span className="ml-2 text-sm text-slate-700 dark:text-slate-200">Loading weather...</span>
+      <div className="p-3 rounded-lg flex items-center justify-center h-24 bg-[#F3E1D2]/40">
+        <LoadingSpinner size="sm" color="text-[#A67C52]"/> 
+        <span className="ml-2 text-sm text-[#3D2A15]">Loading weather...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-3 rounded-lg text-center">
-        <div className="flex items-center justify-center text-red-600 dark:text-red-400">
+      <div className="p-3 rounded-lg text-center bg-[#F7D9D3]/50">
+        <div className="flex items-center justify-center text-red-600">
             <ExclamationTriangleIcon className="w-5 h-5 mr-1.5"/>
             <p className="text-xs">{error}</p>
         </div>
         <button 
             onClick={handleOpenSettings}
-            className="mt-1.5 text-xs text-slate-600 dark:text-slate-300 hover:underline font-medium flex items-center justify-center mx-auto"
+            className="mt-1.5 text-xs text-[#3D2A15] hover:underline font-medium flex items-center justify-center mx-auto"
         >
            <CogIcon className="w-3.5 h-3.5 mr-1"/> Adjust Settings
         </button>
@@ -208,11 +208,11 @@ const WeatherBanner: React.FC<WeatherBannerProps> = ({ weatherLocationPreference
 
   if (!forecastData || forecastData.daily.length === 0) {
     return (
-        <div className="p-3 rounded-lg text-center">
-            <p className="text-sm text-slate-700 dark:text-slate-200">No weather data available.</p>
+        <div className="p-3 rounded-lg text-center bg-[#F3E1D2]/40">
+            <p className="text-sm text-[#3D2A15]">No weather data available.</p>
              <button 
                 onClick={handleOpenSettings}
-                className="mt-1.5 text-xs text-slate-600 dark:text-slate-300 hover:underline font-medium flex items-center justify-center mx-auto"
+                className="mt-1.5 text-xs text-[#3D2A15] hover:underline font-medium flex items-center justify-center mx-auto"
             >
                <CogIcon className="w-3.5 h-3.5 mr-1"/> Check Settings
             </button>
@@ -223,15 +223,15 @@ const WeatherBanner: React.FC<WeatherBannerProps> = ({ weatherLocationPreference
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="p-1 md:p-2 rounded-lg">
+    <div className="p-1 md:p-2 rounded-lg bg-[#F3E1D2]/40">
       {locationName && (
         <div className="flex justify-between items-baseline mb-1.5 px-1">
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate" title={locationName}>
+            <h3 className="text-sm font-medium text-[#3D2A15] truncate" title={locationName}>
                 Weather for {locationName}
             </h3>
              <button 
                 onClick={handleOpenSettings}
-                className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                className="text-xs text-[#A67C52] hover:text-[#3D2A15] transition-colors"
                 title="Change weather settings"
                 aria-label="Change weather settings"
             >

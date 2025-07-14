@@ -1,11 +1,11 @@
 
 
-import React, { ReactNode, useMemo } from 'react';
+import React, { ReactNode, useMemo, useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
 import { MODULES } from '../constants';
 import { ActiveModuleType, Plant, Fertilizer, CompostingMethod, GrowingGround, SeasonalTip, RecentViewItem, WeatherLocationPreference, SeasonalTipInput, EventType, CalendarEventViewModel, CalendarEvent } from '../types';
-import { MagnifyingGlassIcon, PlusIcon, ArrowLeftOnRectangleIcon, ChevronLeftIcon, HomeIcon, UserCircleIcon, CogIcon, CalendarDaysIcon, BellIcon, ArrowRightOnRectangleIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PlusIcon as PlusIconOutline, ChevronLeftIcon, ArrowRightOnRectangleIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import UserAvatar from './UserAvatar';
 
 import HomePage from './HomePage';
@@ -23,7 +23,7 @@ import CalendarView from './CalendarView';
 import ProfilePage from './ProfilePage';
 import SettingsPage from './SettingsPage';
 import { PlantListItemData, SeasonalTipListItemData } from '../services/idbServiceTypes';
-import LeafIcon from './icons/LeafIcon';
+import { HomeIcon, ProfileIcon, SettingsIcon, LogoutIcon, PlantsIcon, GroundsIcon, TasksIcon, TipsIcon, AddPlantIcon, EditIcon, AiFillIcon, AiImage, LogIcon, AiTasks, CancelIcon, SaveIcon, FabMenuIcon } from './icons/JardenIcons';
 
 
 const NavRail: React.FC<{
@@ -33,23 +33,24 @@ const NavRail: React.FC<{
 }> = ({ activeModuleId, onModuleChange, onSignOut }) => {
   const { user } = useAuth();
   
-  const navModules = useMemo(() => MODULES.filter(m => m.id !== 'home' && m.id !== 'profile'), []);
+  const allNavModules = useMemo(() => MODULES.filter(m => m.id !== 'home' && m.id !== 'profile' && m.id !== 'settings'), []);
+  const publicNavModuleIds = ['florapedia', 'seasonaltips'];
+  const publicNavItems = useMemo(() => allNavModules.filter(m => publicNavModuleIds.includes(m.id)), [allNavModules]);
 
   const topNavItems = user 
-    ? [{ id: 'home', name: 'Home', icon: HomeIcon }, ...navModules]
-    : navModules;
+    ? [{ id: 'home', name: 'Home', icon: HomeIcon }, ...allNavModules]
+    : publicNavItems;
   
   const bottomNavItems = [
-    { id: 'profile', name: 'Profile', icon: UserCircleIcon },
-    { id: 'settings', name: 'Settings', icon: CogIcon },
+    { id: 'profile', name: 'Profile', icon: ProfileIcon },
+    { id: 'settings', name: 'Settings', icon: SettingsIcon },
   ];
 
   const renderNavItem = (item: { id: any; name: string; icon: React.ElementType }) => {
     const Icon = item.icon;
     const isActive = activeModuleId === item.id;
-    const moduleConfig = MODULES.find(m => m.id === item.id);
-    const activeClasses = `bg-${moduleConfig?.baseColorClass}-100 dark:bg-${moduleConfig?.baseColorClass}-800/50 text-${moduleConfig?.baseColorClass}-600 dark:text-${moduleConfig?.baseColorClass}-300`;
-    const inactiveClasses = 'text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200';
+    const activeClasses = `bg-[#DCEFD6] text-[#1D3117]`;
+    const inactiveClasses = 'text-[#A67C52] hover:bg-[#E5E3DD]';
 
     return (
       <li key={item.id}>
@@ -67,7 +68,7 @@ const NavRail: React.FC<{
   };
   
   return (
-    <nav className="hidden md:flex flex-col justify-between w-24 bg-white dark:bg-slate-800 p-3 shadow-lg z-30">
+    <nav className="hidden md:flex flex-col justify-between w-24 bg-[#F3E1D2] p-3 shadow-lg z-30">
         <ul className="space-y-2">
             {topNavItems.map(renderNavItem)}
         </ul>
@@ -77,10 +78,10 @@ const NavRail: React.FC<{
                 <li>
                     <button
                         onClick={onSignOut}
-                        className="flex flex-col items-center justify-center w-full h-16 text-slate-500 dark:text-slate-400 hover:bg-red-100 dark:hover:bg-red-800/50 hover:text-red-600 dark:hover:text-red-400 rounded-2xl transition-all duration-300 ease-in-out"
+                        className="flex flex-col items-center justify-center w-full h-16 text-[#A67C52] hover:bg-[#F7D9D3] hover:text-[#D87C6C] rounded-2xl transition-all duration-300 ease-in-out"
                         title="Sign Out"
                     >
-                        <ArrowLeftOnRectangleIcon className="w-6 h-6" />
+                        <LogoutIcon className="w-6 h-6" />
                         <span className="text-[10px] font-medium mt-1">Sign Out</span>
                     </button>
                 </li>
@@ -90,92 +91,29 @@ const NavRail: React.FC<{
   );
 };
 
-const BottomNavBar: React.FC<{
-    activeModuleId: ActiveModuleType | 'home' | 'profile' | 'settings';
-    onModuleChange: (id: ActiveModuleType | 'home' | 'profile' | 'settings') => void;
-}> = ({ activeModuleId, onModuleChange }) => {
-    const { user } = useAuth();
-
-    const navItems = user ? [
-        { id: 'home', name: 'Home', icon: HomeIcon },
-        { id: 'florapedia', name: 'Explore', icon: MagnifyingGlassIcon },
-        { id: 'growinggrounds', name: 'My Jarden', icon: LeafIcon },
-        { id: 'calendar', name: 'Tasks', icon: CalendarDaysIcon },
-    ] : [
-        { id: 'florapedia', name: 'Explore', icon: MagnifyingGlassIcon },
-        { id: 'nutribase', name: 'NutriBase', icon: UserCircleIcon }, // Example public views
-        { id: 'compostcorner', name: 'Compost', icon: CogIcon },
-        { id: 'seasonaltips', name: 'Tips', icon: QuestionMarkCircleIcon },
-    ];
-
-    return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700 flex justify-around p-1 z-40">
-            {navItems.map(item => {
-                const Icon = item.icon;
-                const isActive = activeModuleId === item.id;
-                const moduleConfig = MODULES.find(m => m.id === item.id);
-                const colorClass = moduleConfig ? `text-${moduleConfig.baseColorClass}-600 dark:text-${moduleConfig.baseColorClass}-400` : 'text-emerald-600 dark:text-emerald-400';
-                const inactiveColorClass = 'text-slate-500 dark:text-slate-400';
-
-                return (
-                    <button
-                        key={item.id}
-                        onClick={() => onModuleChange(item.id as any)}
-                        className="flex flex-col items-center justify-center w-full py-1 rounded-lg transition-colors duration-200 ease-in-out"
-                        aria-label={item.name}
-                    >
-                        <Icon className={`w-6 h-6 transition-colors ${isActive ? colorClass : inactiveColorClass}`} />
-                        <span className={`text-xs mt-0.5 transition-colors ${isActive ? colorClass : inactiveColorClass}`}>
-                            {item.name}
-                        </span>
-                    </button>
-                );
-            })}
-        </nav>
-    );
-};
-
-
 const Header: React.FC<{
-    onAddNew: () => void;
-    activeModuleId: ActiveModuleType | 'home' | 'profile' | 'settings';
     onGoToProfile: () => void;
     onModuleChange: (id: ActiveModuleType | 'home' | 'profile' | 'settings') => void;
     isCompactView: boolean;
-}> = ({ onAddNew, activeModuleId, onGoToProfile, onModuleChange, isCompactView }) => {
+}> = ({ onGoToProfile, onModuleChange, isCompactView }) => {
     const { profile, user } = useAuth();
-    const canAddNew = ['florapedia', 'nutribase', 'compostcorner', 'growinggrounds', 'seasonaltips', 'calendar'].includes(activeModuleId);
-    const moduleConfig = MODULES.find(m => m.id === activeModuleId) || MODULES.find(m => m.id === 'home')!;
-
+    
     return (
-        <header className="flex-shrink-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-sm p-3 md:p-4 flex items-center justify-between z-20">
+        <header className="flex-shrink-0 bg-[#FDFCF9]/80 backdrop-blur-sm shadow-sm p-3 md:p-4 flex items-center justify-between z-20 border-b border-[#E5E3DD]">
             <div className="flex items-center space-x-2 md:space-x-3">
-                 <Link to="/" title="Back to senande.life" className="text-emerald-600 dark:text-emerald-400 hover:opacity-80 transition-opacity flex items-center">
-                    <LeafIcon className="w-7 h-7" />
-                    <span className="font-semibold text-lg text-slate-700 dark:text-slate-200 hidden sm:block ml-2">
-                        senande.life
-                    </span>
+                 <Link to="/" title="Back to senande.life home">
+                    <HomeIcon className="w-7 h-7 text-[#6C8C61] hover:opacity-80 transition-opacity" />
                 </Link>
-                <span className="text-slate-400 dark:text-slate-500 hidden sm:block">.</span>
-                <button onClick={() => onModuleChange(user ? 'home' : 'florapedia')} className="font-semibold text-lg text-slate-700 dark:text-slate-200 hidden sm:block hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-                    jarden
-                </button>
+                <div className="flex items-baseline">
+                    <Link to="/" title="Back to senande.life" className="font-semibold text-lg text-[#2C2C2C] hover:text-[#6C8C61] transition-colors no-underline">
+                        senande.life
+                    </Link>
+                    <button onClick={() => onModuleChange('home')} className="font-semibold text-lg text-[#6C8C61] hover:opacity-80 transition-colors">
+                        .jarden
+                    </button>
+                </div>
             </div>
             <div className="flex items-center space-x-3">
-                {user && canAddNew && (
-                    <button
-                        onClick={onAddNew}
-                        className={`flex items-center px-4 py-2 text-sm font-medium rounded-full shadow-sm text-white ${moduleConfig.bgColor} ${moduleConfig.hoverBgColor} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-emerald-500 transition-all duration-300 ease-in-out`}
-                    >
-                        <PlusIcon className="w-5 h-5 mr-1 -ml-1" />
-                        {activeModuleId === 'calendar' ? 'Add Event' : 'Add New'}
-                    </button>
-                )}
-                {user && (
-                    <button className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full transition-colors duration-200 ease-in-out">
-                        <BellIcon className="w-6 h-6" />
-                    </button>
-                )}
                  <button onClick={onGoToProfile} className="block">
                     <UserAvatar avatarUrl={profile?.avatar_url} size={isCompactView ? "md" : "lg"} />
                 </button>
@@ -211,7 +149,6 @@ interface JardenLayoutProps {
     setIsLoadingAi: (loading: boolean) => void;
     onUpdatePlant: (plantId: string, updates: Partial<Plant>) => void;
     onPopulateWithStandardAI: (plantId: string) => void;
-    onOpenCustomAiPromptModal: (data: any) => void;
     onUpdateFertilizer: (fertilizerId: string, updates: Partial<Fertilizer>) => void;
     onUpdateCompostingMethod: (methodId: string, updates: Partial<CompostingMethod>) => void;
     onUpdateGrowingGround: (groundId: string, updates: Partial<GrowingGround>) => void;
@@ -227,7 +164,132 @@ interface JardenLayoutProps {
     weatherLocationPreference: WeatherLocationPreference | null;
     setIsDefineLocationModalOpen: (isOpen: boolean) => void;
     onNavigateToRecentItem: (item: RecentViewItem) => void;
+    handleAiGenerateImage: (itemId: string) => Promise<void>;
 }
+
+interface FabAction {
+    id: string;
+    label: string;
+    icon: React.FC<React.SVGProps<SVGSVGElement>>;
+    action: () => void;
+    loading?: boolean;
+}
+
+const FabSystem: React.FC<any> = (props) => {
+    const { isEditing, setIsEditing, detailViewActionsRef, activeModuleId, selectedItemId, onAddNew, user } = props;
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const isCompactView = window.innerWidth < 768;
+
+    const getDetailActions = () => {
+        if (!selectedItemId) return [];
+        const actions: FabAction[] = [
+            { id: 'edit', label: 'Edit', icon: EditIcon, action: () => setIsEditing(true) },
+        ];
+        if (activeModuleId === 'florapedia') {
+            actions.push(
+                { id: 'ai_fill', label: 'AI Fill', icon: AiFillIcon, action: () => props.onPopulateWithStandardAI(selectedItemId) },
+                { id: 'ai_image', label: 'AI Image', icon: AiImage, action: () => props.handleAiGenerateImage(selectedItemId), loading: props.isLoadingAi }
+            );
+        }
+        if (activeModuleId === 'growinggrounds') {
+            actions.push(
+                { id: 'add_plant', label: 'Add Plant', icon: AddPlantIcon, action: () => props.onOpenAddPlantToGroundModal(selectedItemId) },
+                { id: 'add_log', label: 'Add Log', icon: LogIcon, action: () => props.onOpenAddLogEntryModal(selectedItemId) },
+                { id: 'add_task', label: 'Add Task', icon: TasksIcon, action: () => props.onOpenAddEventForGround(selectedItemId) },
+                { id: 'ai_tasks', label: 'AI Tasks', icon: AiTasks, action: () => props.onAiGenerateGroundTasks(selectedItemId), loading: props.isLoadingAiForGroundTasks },
+                { id: 'ai_image', label: 'AI Image', icon: AiImage, action: () => props.handleAiGenerateImage(selectedItemId), loading: props.isLoadingAi }
+            );
+        }
+        return actions;
+    };
+
+    const handleSave = () => detailViewActionsRef.current?.save();
+    const handleCancel = () => detailViewActionsRef.current?.cancel();
+
+    const ActionButton: React.FC<{ action: FabAction }> = ({ action }) => (
+        <button
+            onClick={() => { action.action(); setIsMenuOpen(false); }}
+            disabled={action.loading}
+            className="flex items-center gap-3 bg-[#fdfcf9] text-[#2C2C2C] pl-5 pr-5 py-3 rounded-full shadow-lg hover:bg-[#DCEFD6] transition-all disabled:opacity-70 border border-[#E5E3DD]"
+        >
+            <action.icon className="w-5 h-5" />
+            <span className="font-medium text-sm">{action.label}</span>
+        </button>
+    );
+
+    const fabContainerClasses = `fixed z-50 ${isCompactView ? 'bottom-24 right-4' : 'bottom-8 right-8'}`;
+    
+    if (!user) return null; // No FABs for anonymous users
+
+    if (isEditing) {
+        return (
+            <div className={`${fabContainerClasses} flex gap-4`}>
+                <button onClick={handleCancel} className="w-16 h-16 flex items-center justify-center bg-[#F7D9D3] text-[#D87C6C] rounded-2xl shadow-lg hover:bg-[#f5c6bd] transition-all" aria-label="Cancel"><CancelIcon className="w-8 h-8" /></button>
+                <button onClick={handleSave} className="w-16 h-16 flex items-center justify-center bg-[#DCEFD6] text-[#1D3117] rounded-2xl shadow-lg hover:bg-[#c9e8c4] transition-all" aria-label="Save"><SaveIcon className="w-8 h-8" /></button>
+            </div>
+        );
+    }
+    
+    if (selectedItemId) {
+        return (
+            <div className={`${fabContainerClasses} flex flex-col-reverse items-end gap-4`}>
+                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="w-16 h-16 flex items-center justify-center bg-[#6C8C61] text-white rounded-2xl shadow-lg hover:bg-[#5a7850] transition-all" aria-expanded={isMenuOpen} aria-label="Open actions menu">
+                    <FabMenuIcon className="w-8 h-8" />
+                </button>
+                {isMenuOpen && getDetailActions().map(action => <ActionButton key={action.id} action={action} />)}
+            </div>
+        );
+    }
+    
+    const canAddNew = ['florapedia', 'nutribase', 'compostcorner', 'growinggrounds', 'seasonaltips', 'calendar'].includes(activeModuleId);
+    if (canAddNew && !selectedItemId) { // Only show Add button in list view
+        return (
+            <div className={fabContainerClasses}>
+                <button onClick={onAddNew} className="w-16 h-16 flex items-center justify-center bg-[#6C8C61] text-white rounded-2xl shadow-lg hover:bg-[#5a7850] transition-transform hover:scale-105" aria-label="Add new item">
+                    <PlusIconOutline className="w-8 h-8" />
+                </button>
+            </div>
+        );
+    }
+
+    return null;
+};
+
+const BottomNavBar: React.FC<any> = ({ activeModuleId, onModuleChange }) => {
+    const { user } = useAuth();
+
+    const navItemDefinitions = {
+        home: { id: 'home', name: 'Home', Icon: HomeIcon },
+        plants: { id: 'florapedia', name: 'Plants', Icon: PlantsIcon },
+        grounds: { id: 'growinggrounds', name: 'Grounds', Icon: GroundsIcon },
+        tasks: { id: 'calendar', name: 'Tasks', Icon: TasksIcon },
+        tips: { id: 'seasonaltips', name: 'Tips', Icon: TipsIcon },
+    };
+
+    const authNavItems = [navItemDefinitions.home, navItemDefinitions.plants, navItemDefinitions.grounds, navItemDefinitions.tasks];
+    const anonNavItems = [navItemDefinitions.plants, navItemDefinitions.tips];
+    const navItems = user ? authNavItems : anonNavItems;
+    
+    return (
+        <div className="md:hidden fixed bottom-0 inset-x-0 p-3 z-40 pointer-events-none">
+            <nav className="bg-white/90 backdrop-blur-sm flex justify-around p-1.5 rounded-full shadow-2xl border border-[#E5E3DD] pointer-events-auto max-w-sm mx-auto">
+                {navItems.map(item => {
+                    const isActive = activeModuleId === item.id;
+                    const Icon = item.Icon;
+                    return (
+                        <button key={item.id} onClick={() => onModuleChange(item.id as any)} className="flex flex-col items-center justify-center flex-1 h-14 rounded-full transition-all duration-200 group" aria-label={item.name} aria-current={isActive ? 'page' : undefined}>
+                            <div className={`flex items-center justify-center rounded-full transition-colors duration-300 ease-in-out px-5 py-1 ${isActive ? 'bg-[#DCEFD6]' : 'bg-transparent'}`}>
+                                <Icon className={`w-6 h-6 transition-colors duration-300 ${isActive ? 'text-[#1D3117]' : 'text-[#A67C52] group-hover:text-[#1D3117]'}`} />
+                            </div>
+                            <span className={`text-xs font-medium transition-colors duration-300 mt-0.5 ${isActive ? 'text-[#1D3117]' : 'text-[#2C2C2C] group-hover:text-[#1D3117]'}`}>{item.name}</span>
+                        </button>
+                    );
+                })}
+            </nav>
+        </div>
+    );
+};
+
 
 const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
     const {
@@ -235,16 +297,31 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
         plants, plantListItems, fertilizers, compostingMethods, growingGrounds, seasonalTips, seasonalTipListItems,
         eventTypes, calendarEvents,
         recentViews, onItemSelect, selectedItemId, onDeselect, appError, setAppError, isLoadingAi,
-        setIsLoadingAi, onUpdatePlant, onPopulateWithStandardAI, onOpenCustomAiPromptModal,
+        setIsLoadingAi, onUpdatePlant, onPopulateWithStandardAI,
         onUpdateFertilizer, onUpdateCompostingMethod, onUpdateGrowingGround, onDeleteGround, onUpdateSeasonalTip,
         onOpenAddPlantToGroundModal, onOpenAddLogEntryModal, onOpenAddEventForGround,
         onAiGenerateGroundTasks, isLoadingAiForGroundTasks, onUpdateCalendarEvent, onDeleteCalendarEvent,
-        weatherLocationPreference, setIsDefineLocationModalOpen, onNavigateToRecentItem
+        weatherLocationPreference, setIsDefineLocationModalOpen, onNavigateToRecentItem,
+        handleAiGenerateImage
     } = props;
     
     const { user } = useAuth();
     const moduleConfig = useMemo(() => MODULES.find(m => m.id === activeModuleId) || MODULES.find(m => m.id === 'home')!, [activeModuleId]);
-    const isCompactView = window.innerWidth < 1024;
+    const [isCompactView, setIsCompactView] = useState(window.innerWidth < 768);
+
+    const [isEditing, setIsEditing] = useState(false);
+    const detailViewActionsRef = useRef<{ save: () => void; cancel: () => void; }>(null);
+
+    useEffect(() => {
+        const handleResize = () => setIsCompactView(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+    
+    useEffect(() => {
+        setIsEditing(false);
+    }, [selectedItemId, activeModuleId]);
+
 
     const filteredItems = useMemo(() => {
         if (!searchTerm) {
@@ -278,14 +355,14 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
             <div className="p-3 md:p-4">
                 <div className="relative mb-4">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <MagnifyingGlassIcon className="h-5 w-5 text-slate-400" aria-hidden="true" />
+                        <MagnifyingGlassIcon className="h-5 w-5 text-[#A67C52]" aria-hidden="true" />
                     </div>
                     <input
                         type="search"
                         value={searchTerm}
                         onChange={(e) => onSearchChange(e.target.value)}
                         placeholder={`Search ${moduleConfig.name}...`}
-                        className="block w-full bg-slate-100 dark:bg-slate-700 border-transparent rounded-full pl-10 pr-3 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800 focus:ring-emerald-500"
+                        className="block w-full bg-white border border-[#B6B6B6] rounded-full pl-10 pr-3 py-2.5 text-sm text-[#2C2C2C] placeholder-[#A67C52] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6C8C61]"
                     />
                 </div>
                 
@@ -297,7 +374,7 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
                             case 'compostcorner': return <ul className={gridClasses}>{filteredItems.map(c => <CompostingMethodListItem key={c.id} method={c as CompostingMethod} onSelectMethod={(id) => onItemSelect(id, 'compost_method')} isSelected={selectedItemId === c.id} moduleConfig={moduleConfig} />)}</ul>;
                             case 'growinggrounds': return <ul className={gridClasses}>{filteredItems.map(g => <GrowingGroundListItem key={g.id} ground={g as GrowingGround} onSelectGround={(id) => onItemSelect(id, 'growing_ground')} isSelected={selectedItemId === g.id} moduleConfig={moduleConfig} />)}</ul>;
                             case 'seasonaltips': return <ul className={gridClasses}>{filteredItems.map(t => <SeasonalTipListItem key={t.id} tip={t as SeasonalTipListItemData} onSelectTip={(id) => onItemSelect(id, 'seasonal_tip')} isSelected={selectedItemId === t.id} moduleConfig={moduleConfig} />)}</ul>;
-                            default: return <div className="p-4 text-center text-slate-500">Select a module from the side to see items.</div>;
+                            default: return <div className="p-4 text-center text-[#A67C52]">Select a module from the side to see items.</div>;
                         }
                     })()
                 }
@@ -309,18 +386,18 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
         if (!selectedItemId) {
              const EmptyIcon = moduleConfig.icon || QuestionMarkCircleIcon;
              return (
-                 <div className="hidden lg:flex flex-col items-center justify-center h-full text-center p-8 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800">
-                    <EmptyIcon className={`w-24 h-24 text-${moduleConfig.baseColorClass}-400 mb-6`} />
-                    <h2 className="text-3xl font-semibold text-slate-700 dark:text-slate-200 mb-2">{moduleConfig.name}</h2>
-                    <p className="text-lg">Select an item from the list to view its details.</p>
+                 <div className="hidden lg:flex flex-col items-center justify-center h-full text-center p-8 bg-white">
+                    <EmptyIcon className={`w-24 h-24 text-[#DCEFD6] mb-6`} />
+                    <h2 className="text-3xl font-semibold text-[#1D3117] mb-2">{moduleConfig.name}</h2>
+                    <p className="text-lg text-[#A67C52]">Select an item from the list to view its details.</p>
                 </div>
              );
         }
         switch(activeModuleId) {
-            case 'florapedia': return <PlantDetailView plant={plants.find(p => p.id === selectedItemId) || null} onUpdatePlant={onUpdatePlant} isLoadingAi={isLoadingAi} setIsLoadingAi={setIsLoadingAi} setAppError={setAppError} onOpenCustomAiPromptModal={onOpenCustomAiPromptModal} onPopulateWithStandardAI={onPopulateWithStandardAI} moduleConfig={moduleConfig} onDeselect={onDeselect} isCompactView={isCompactView} />;
+            case 'florapedia': return <PlantDetailView plant={plants.find(p => p.id === selectedItemId) || null} onUpdatePlant={onUpdatePlant} isLoadingAi={isLoadingAi} setIsLoadingAi={setIsLoadingAi} setAppError={setAppError} onPopulateWithStandardAI={onPopulateWithStandardAI} moduleConfig={moduleConfig} onDeselect={onDeselect} isCompactView={isCompactView} ref={detailViewActionsRef} isEditing={isEditing} setIsEditing={setIsEditing} />;
             case 'nutribase': return <FertilizerDetailView fertilizer={fertilizers.find(f => f.id === selectedItemId) || null} onUpdateFertilizer={onUpdateFertilizer} setAppError={setAppError} moduleConfig={moduleConfig} onDeselect={onDeselect} isCompactView={isCompactView} />;
             case 'compostcorner': return <CompostingMethodDetailView method={compostingMethods.find(c => c.id === selectedItemId) || null} onUpdateMethod={onUpdateCompostingMethod} setAppError={setAppError} moduleConfig={moduleConfig} onDeselect={onDeselect} isCompactView={isCompactView} />;
-            case 'growinggrounds': return <GrowingGroundDetailView ground={growingGrounds.find(g => g.id === selectedItemId) || null} onUpdateGround={onUpdateGrowingGround} onDeleteGround={onDeleteGround} setAppError={setAppError} plants={plants} onOpenAddLogEntryModal={onOpenAddLogEntryModal} onOpenAddPlantToGroundModal={onOpenAddPlantToGroundModal} onOpenAddEventForGround={onOpenAddEventForGround} onAiGenerateGroundTasks={onAiGenerateGroundTasks} isLoadingAiForGroundTasks={isLoadingAiForGroundTasks} onUpdateCalendarEvent={onUpdateCalendarEvent} onDeleteCalendarEvent={onDeleteCalendarEvent} calendarEvents={calendarEvents} moduleConfig={moduleConfig} onDeselect={onDeselect} isCompactView={isCompactView} />;
+            case 'growinggrounds': return <GrowingGroundDetailView ground={growingGrounds.find(g => g.id === selectedItemId) || null} onUpdateGround={onUpdateGrowingGround} onDeleteGround={onDeleteGround} setAppError={setAppError} plants={plants} onOpenAddLogEntryModal={onOpenAddLogEntryModal} onOpenAddPlantToGroundModal={onOpenAddPlantToGroundModal} onOpenAddEventForGround={onOpenAddEventForGround} onAiGenerateGroundTasks={onAiGenerateGroundTasks} isLoadingAiForGroundTasks={isLoadingAiForGroundTasks} onUpdateCalendarEvent={onUpdateCalendarEvent} onDeleteCalendarEvent={onDeleteCalendarEvent} calendarEvents={calendarEvents} moduleConfig={moduleConfig} onDeselect={onDeselect} isCompactView={isCompactView} ref={detailViewActionsRef} isEditing={isEditing} setIsEditing={setIsEditing} />;
             case 'seasonaltips': return <SeasonalTipDetailView tip={seasonalTips.find(t => t.id === selectedItemId) || null} onUpdateTip={onUpdateSeasonalTip} setAppError={setAppError} moduleConfig={moduleConfig} onDeselect={onDeselect} isCompactView={isCompactView} />;
             default: return null;
         }
@@ -335,10 +412,10 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
             default:
                 return (
                     <div className="flex flex-1 overflow-hidden">
-                        <aside className={`w-full lg:w-1/3 xl:w-1/4 border-r border-slate-200 dark:border-slate-700 flex-col overflow-y-auto custom-scrollbar ${selectedItemId && isCompactView ? 'hidden' : 'flex'}`}>
+                        <aside className={`w-full lg:w-1/3 xl:w-1/4 bg-[#fdfcf9] border-r border-[#E5E3DD] flex-col overflow-y-auto custom-scrollbar ${selectedItemId && isCompactView ? 'hidden' : 'flex'}`}>
                             {renderListView()}
                         </aside>
-                        <section className={`flex-1 bg-white dark:bg-slate-800 overflow-y-auto custom-scrollbar ${!selectedItemId && isCompactView ? 'hidden' : 'block'}`}>
+                        <section className={`flex-1 bg-white overflow-y-auto custom-scrollbar ${!selectedItemId && isCompactView ? 'hidden' : 'block'}`}>
                             {renderDetailView()}
                         </section>
                     </div>
@@ -346,19 +423,36 @@ const JardenLayout: React.FC<JardenLayoutProps> = (props) => {
         }
     };
 
-
     return (
-        <div className="h-screen w-screen bg-slate-100 dark:bg-slate-900 flex text-slate-900 dark:text-slate-100 font-sans">
+        <div className="h-screen w-screen flex text-[#2C2C2C] font-sans">
             <NavRail activeModuleId={activeModuleId} onModuleChange={onModuleChange} onSignOut={onSignOut} />
             <div className="flex-1 flex flex-col min-w-0">
-                <Header onAddNew={onAddNew} activeModuleId={activeModuleId} onGoToProfile={() => onModuleChange('profile')} onModuleChange={onModuleChange} isCompactView={isCompactView} />
-                <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+                <Header onGoToProfile={() => onModuleChange('profile')} onModuleChange={onModuleChange} isCompactView={isCompactView} />
+                <main className="flex-1 overflow-y-auto pb-24 md:pb-0">
                     {renderMainContent()}
                 </main>
             </div>
-            <BottomNavBar activeModuleId={activeModuleId} onModuleChange={onModuleChange} />
+             <FabSystem
+                user={user}
+                activeModuleId={activeModuleId}
+                selectedItemId={selectedItemId}
+                isEditing={isEditing}
+                setIsEditing={setIsEditing}
+                detailViewActionsRef={detailViewActionsRef}
+                onAddNew={onAddNew}
+                onPopulateWithStandardAI={onPopulateWithStandardAI}
+                handleAiGenerateImage={handleAiGenerateImage}
+                onOpenAddPlantToGroundModal={onOpenAddPlantToGroundModal}
+                onOpenAddLogEntryModal={onOpenAddLogEntryModal}
+                onOpenAddEventForGround={onOpenAddEventForGround}
+                onAiGenerateGroundTasks={onAiGenerateGroundTasks}
+                isLoadingAiForGroundTasks={isLoadingAiForGroundTasks}
+                isLoadingAi={isLoadingAi}
+             />
+             <BottomNavBar activeModuleId={activeModuleId} onModuleChange={onModuleChange} />
         </div>
     );
 };
+
 
 export default JardenLayout;

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { GrowingGroundPlant, Plant, PlantStage } from '../types';
 import { PLANT_STAGES, MODULES } from '../constants';
@@ -56,24 +57,24 @@ const UpdatePlantStageModal: React.FC<UpdatePlantStageModalProps> = ({
     onClose();
   };
   
-  const inputBaseClass = "w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none sm:text-sm bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400";
-  const inputFocusClass = `focus:ring-1 focus:ring-${moduleConfig.baseColorClass}-500 focus:border-${moduleConfig.baseColorClass}-500 dark:focus:ring-${moduleConfig.baseColorClass}-400 dark:focus:border-${moduleConfig.baseColorClass}-400`;
+  const inputBaseClass = "w-full px-3 py-2.5 border border-[#B6B6B6] rounded-lg shadow-sm focus:outline-none sm:text-sm bg-white text-[#2C2C2C] placeholder-[#A67C52]";
+  const inputFocusClass = `focus:ring-1 focus:ring-[#6C8C61] focus:border-[#6C8C61]`;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 print:hidden" aria-modal="true" role="dialog">
-      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-lg transform transition-all max-h-[90vh] flex flex-col">
+      <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg transform transition-all max-h-[90vh] flex flex-col border border-[#E5E3DD]">
         <div className="flex justify-between items-center mb-5">
-          <h2 className="text-xl font-medium text-slate-800 dark:text-slate-100">Update Stage for {plantInfo.plant_identification_overview.common_names[0]}</h2>
-          <button type="button" onClick={onClose} className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full" aria-label="Close modal">
+          <h2 className="text-xl font-medium text-[#1D3117]">Update Stage for {plantInfo.plant_identification_overview.common_names[0]}</h2>
+          <button type="button" onClick={onClose} className="p-1.5 text-[#A67C52] hover:bg-[#E5E3DD] rounded-full" aria-label="Close modal">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
-        {error && <p className="text-red-600 dark:text-red-400 text-sm mb-3 p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">{error}</p>}
+        {error && <p className="text-red-600 text-sm mb-3 p-2 bg-red-100 rounded-lg">{error}</p>}
 
         <div className="space-y-4 flex-grow overflow-y-auto custom-scrollbar pr-2">
           <div>
-            <label htmlFor="plantStage" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">New Stage</label>
+            <label htmlFor="plantStage" className="block text-xs font-medium text-[#A67C52] mb-1">New Stage</label>
             <select
               id="plantStage"
               value={stage}
@@ -85,7 +86,7 @@ const UpdatePlantStageModal: React.FC<UpdatePlantStageModalProps> = ({
           </div>
 
           <div>
-            <label htmlFor="stageComment" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Comment (optional)</label>
+            <label htmlFor="stageComment" className="block text-xs font-medium text-[#A67C52] mb-1">Comment (optional)</label>
             <textarea
               id="stageComment"
               value={comment}
@@ -94,58 +95,58 @@ const UpdatePlantStageModal: React.FC<UpdatePlantStageModalProps> = ({
               placeholder="e.g., First true leaves have appeared."
               className={`${inputBaseClass} ${inputFocusClass} leading-relaxed`}
             />
-             <p className="text-xs text-slate-500 mt-1">This comment will be added to the activity log.</p>
+             <p className="text-xs text-[#A67C52] mt-1">This comment will be added to the activity log.</p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Photo (optional)</label>
-            <div className="mt-1 flex items-center space-x-3 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+            <label className="block text-xs font-medium text-[#A67C52] mb-1">Photo (optional)</label>
+            <div className="mt-1 flex items-center space-x-3 p-3 bg-[#f0f0f0] rounded-lg">
                 {photoBase64 ? (
                     <img src={photoBase64} alt="Preview" className="w-16 h-16 rounded-lg object-cover shadow-sm"/>
                 ) : (
-                    <div className="w-16 h-16 rounded-lg bg-slate-200 dark:bg-slate-600 flex items-center justify-center">
-                        <PhotoIcon className="w-8 h-8 text-slate-400 dark:text-slate-500"/>
+                    <div className="w-16 h-16 rounded-lg bg-[#E5E3DD] flex items-center justify-center">
+                        <PhotoIcon className="w-8 h-8 text-[#A67C52]"/>
                     </div>
                 )}
                 <div>
                     <input type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} className="hidden" id={`plant-stage-photo-upload`}/>
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className={`flex items-center px-3 py-1.5 text-xs font-medium text-${moduleConfig.baseColorClass}-700 bg-${moduleConfig.baseColorClass}-100 hover:bg-${moduleConfig.baseColorClass}-200 dark:text-${moduleConfig.baseColorClass}-200 dark:bg-${moduleConfig.baseColorClass}-700 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm`}>
+                    <button type="button" onClick={() => fileInputRef.current?.click()} className={`flex items-center px-3 py-1.5 text-xs font-medium text-white bg-[#6C8C61] hover:bg-[#5a7850] rounded-full shadow-sm`}>
                         <ArrowUpTrayIcon className="w-3.5 h-3.5 mr-1" />
                         {photoBase64 ? 'Change Photo' : 'Upload Photo'}
                     </button>
                     {photoBase64 && (
-                         <button type="button" onClick={() => { setPhotoBase64(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="mt-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full">
+                         <button type="button" onClick={() => { setPhotoBase64(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="mt-1.5 px-3 py-1.5 text-xs font-medium text-[#2C2C2C] hover:bg-[#E5E3DD] rounded-full">
                             Remove
                          </button>
                     )}
                 </div>
             </div>
-             <p className="text-xs text-slate-500 mt-1">This photo will be added to the activity log.</p>
+             <p className="text-xs text-[#A67C52] mt-1">This photo will be added to the activity log.</p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Stage History</label>
-            <ul className="mt-1 space-y-1.5 max-h-32 overflow-y-auto border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 bg-slate-100 dark:bg-slate-700/50">
+            <label className="block text-xs font-medium text-[#A67C52] mb-1">Stage History</label>
+            <ul className="mt-1 space-y-1.5 max-h-32 overflow-y-auto border border-[#B6B6B6] rounded-lg p-2.5 bg-white">
               {plantInGround.stageLog.length > 0 ? (
                 [...plantInGround.stageLog].reverse().map((log, index) => (
-                    <li key={index} className="text-sm text-slate-700 dark:text-slate-200">
-                        <span className={`font-semibold text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300`}>{log.stage}</span> on {new Date(log.date + 'T00:00:00').toLocaleDateString()}
+                    <li key={index} className="text-sm text-[#2C2C2C]">
+                        <span className={`font-semibold text-[#6C8C61]`}>{log.stage}</span> on {new Date(log.date + 'T00:00:00').toLocaleDateString()}
                     </li>
                 ))
               ) : (
-                <li className="text-sm text-slate-500 italic">No history yet.</li>
+                <li className="text-sm text-[#A67C52] italic">No history yet.</li>
               )}
             </ul>
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-slate-300 dark:border-slate-700">
+        <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-[#E5E3DD]">
           <button type="button" onClick={onClose} 
-            className={`px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400`}>
+            className={`px-4 py-2 text-sm font-medium text-[#6C8C61] hover:bg-[#DCEFD6] rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#6C8C61]`}>
             Cancel
           </button>
           <button type="button" onClick={handleSubmit} 
-            className={`px-6 py-2 text-sm font-medium text-white bg-${moduleConfig.baseColorClass}-600 hover:bg-${moduleConfig.baseColorClass}-700 dark:bg-${moduleConfig.baseColorClass}-500 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 focus:ring-${moduleConfig.baseColorClass}-500`}>
+            className={`px-6 py-2 text-sm font-medium text-white bg-[#6C8C61] hover:bg-[#5a7850] rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-[#6C8C61]`}>
             Save Stage
           </button>
         </div>

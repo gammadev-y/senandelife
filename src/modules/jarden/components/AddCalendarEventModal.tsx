@@ -1,9 +1,5 @@
 
 
-
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { CalendarEvent, EventType } from '../types';
 import { MODULES } from '../constants';
@@ -13,7 +9,7 @@ import LoadingSpinner from './LoadingSpinner';
 interface AddCalendarEventModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (eventData: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'is_completed' | 'event_types'>, groundId?: string) => Promise<any>;
+  onSave: (eventData: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'is_completed' | 'event_types' | 'related_module' | 'related_entry_id'>, groundId?: string) => Promise<any>;
   eventTypes: EventType[];
   moduleConfig: typeof MODULES[0];
   groundId?: string; // Optional: To associate with a specific ground
@@ -84,8 +80,6 @@ const AddCalendarEventModal: React.FC<AddCalendarEventModalProps> = ({
             event_type_id: eventTypeId,
             is_recurring: false,
             recurrence_rule: null,
-            related_module: groundId ? 'growing_grounds' : null,
-            related_entry_id: groundId || null,
         }, groundId);
         clearForm();
         onClose();
@@ -96,42 +90,42 @@ const AddCalendarEventModal: React.FC<AddCalendarEventModalProps> = ({
     }
   };
   
-  const inputBaseClass = "w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none sm:text-sm bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400";
-  const inputFocusClass = `focus:ring-1 focus:ring-${moduleConfig.baseColorClass}-500 focus:border-${moduleConfig.baseColorClass}-500 dark:focus:ring-${moduleConfig.baseColorClass}-400 dark:focus:border-${moduleConfig.baseColorClass}-400`;
-  const primaryButtonClass = `px-6 py-2 text-sm font-medium text-white bg-${moduleConfig.baseColorClass}-600 hover:bg-${moduleConfig.baseColorClass}-700 dark:bg-${moduleConfig.baseColorClass}-500 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 focus:ring-${moduleConfig.baseColorClass}-500 disabled:opacity-70`;
-  const secondaryButtonClass = `px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400 disabled:opacity-70`;
+  const inputBaseClass = "w-full px-3 py-2.5 border border-[#B6B6B6] rounded-lg shadow-sm focus:outline-none sm:text-sm bg-white text-[#2C2C2C] placeholder-[#A67C52]";
+  const inputFocusClass = `focus:ring-1 focus:ring-[#6C8C61] focus:border-[#6C8C61]`;
+  const primaryButtonClass = `px-6 py-2 text-sm font-medium text-white bg-[#6C8C61] hover:bg-[#5a7850] rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-[#6C8C61] disabled:opacity-70`;
+  const secondaryButtonClass = `px-4 py-2 text-sm font-medium text-[#6C8C61] hover:bg-[#DCEFD6] rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#6C8C61] disabled:opacity-70`;
   
   const selectedEventType = eventTypes.find(et => et.id === eventTypeId);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 print:hidden" aria-modal="true" role="dialog">
-      <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-lg transform transition-all max-h-[90vh] flex flex-col">
+      <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-lg transform transition-all max-h-[90vh] flex flex-col border border-[#E5E3DD]">
         <div className="flex justify-between items-center mb-5">
-          <h2 className="text-xl font-medium text-slate-800 dark:text-slate-100">Add Calendar Event</h2>
-          <button type="button" onClick={() => { clearForm(); onClose();}} className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full" aria-label="Close modal">
+          <h2 className="text-xl font-medium text-[#1D3117]">Add Calendar Event</h2>
+          <button type="button" onClick={() => { clearForm(); onClose();}} className="p-1.5 text-[#A67C52] hover:bg-[#E5E3DD] rounded-full" aria-label="Close modal">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
-        {error && <p className="text-red-600 dark:text-red-400 text-sm mb-3 p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">{error}</p>}
+        {error && <p className="text-red-600 text-sm mb-3 p-2 bg-red-100 rounded-lg">{error}</p>}
 
         <div className="space-y-4 flex-grow overflow-y-auto custom-scrollbar pr-2">
           <div>
-            <label htmlFor="eventTitle" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+            <label htmlFor="eventTitle" className="block text-xs font-medium text-[#A67C52] mb-1">
               Title <span className="text-red-500">*</span>
             </label>
             <input type="text" id="eventTitle" value={title} onChange={(e) => setTitle(e.target.value)} className={`${inputBaseClass} ${inputFocusClass}`} required />
           </div>
 
           <div>
-            <label htmlFor="eventStartDate" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+            <label htmlFor="eventStartDate" className="block text-xs font-medium text-[#A67C52] mb-1">
               Date <span className="text-red-500">*</span>
             </label>
             <input type="date" id="eventStartDate" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`${inputBaseClass} ${inputFocusClass}`} required />
           </div>
 
           <div ref={dropdownRef} className="relative">
-            <label htmlFor="eventType" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Event Type</label>
+            <label htmlFor="eventType" className="block text-xs font-medium text-[#A67C52] mb-1">Event Type</label>
             <button
               type="button"
               id="eventType"
@@ -144,14 +138,14 @@ const AddCalendarEventModal: React.FC<AddCalendarEventModalProps> = ({
                     <span className="w-6 text-xl text-center mr-2">{selectedEventType?.icon_name || '📝'}</span>
                     {selectedEventType?.name || 'Select a type...'}
                 </span>
-                <ChevronDownIcon className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
+                <ChevronDownIcon className={`w-5 h-5 text-[#A67C52] transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
             </button>
             {isDropdownOpen && (
-                <ul className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-700 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm" role="listbox">
+                <ul className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm" role="listbox">
                     {eventTypes.map(type => (
                         <li key={type.id}
                             onClick={() => { setEventTypeId(type.id); setIsDropdownOpen(false); }}
-                            className="text-slate-900 dark:text-slate-100 cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-slate-100 dark:hover:bg-slate-600 flex items-center"
+                            className="text-[#2C2C2C] cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-[#E5E3DD] flex items-center"
                             role="option"
                             aria-selected={eventTypeId === type.id}
                         >
@@ -164,12 +158,12 @@ const AddCalendarEventModal: React.FC<AddCalendarEventModalProps> = ({
           </div>
 
           <div>
-            <label htmlFor="eventDescription" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Description (Optional)</label>
+            <label htmlFor="eventDescription" className="block text-xs font-medium text-[#A67C52] mb-1">Description (Optional)</label>
             <textarea id="eventDescription" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className={`${inputBaseClass} ${inputFocusClass} leading-relaxed`} />
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-slate-300 dark:border-slate-700">
+        <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-[#E5E3DD]">
           <button type="button" onClick={() => { clearForm(); onClose();}} className={secondaryButtonClass} disabled={isSaving}>Cancel</button>
           <button type="button" onClick={handleSubmit} className={primaryButtonClass} disabled={isSaving}>
             {isSaving ? <LoadingSpinner size="sm" color="text-white"/> : 'Save Event'}

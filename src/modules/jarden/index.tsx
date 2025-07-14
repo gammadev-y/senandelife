@@ -1,7 +1,5 @@
 
 
-
-
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import {
@@ -19,7 +17,7 @@ import {
     addCalendarEvent, updateCalendarEvent, deleteCalendarEvent
 } from './services/supabaseService';
 import { createDefaultPlantStructureInternal } from './utils/plantUtils';
-import { getAiAssistedDataForPlant, getAiAssistedDataForPlantSection, generateGroundTasksWithAi } from './services/geminiService';
+import { getAiAssistedDataForPlant, getAiAssistedDataForPlantSection, generateGroundTasksWithAi, generatePlantImageWithAi, generateGroundImageWithAi } from './services/geminiService';
 import { JardenDataProvider, useJardenData } from './context/JardenDataContext';
 
 import AuthPage from './components/AuthPage';
@@ -38,6 +36,8 @@ import { MODULES } from './constants';
 import DefineLocationModal from './components/DefineLocationModal';
 import UpdatePlantStageModal from './components/UpdatePlantStageModal';
 import { produce } from 'immer';
+import JardenLoadingScreen from './components/JardenLoadingScreen';
+import { Database } from '../../../../services/supabase';
 
 type ModalType = 'addPlant' | 'addFertilizer' | 'addCompost' | 'addGround' | 'addTip' | 'customAiPrompt' | 'addPlantToGround' | 'addLogEntry' | 'addEvent' | 'defineLocation' | 'updatePlantStage';
 
@@ -211,9 +211,15 @@ const JardenModuleContent: React.FC = () => {
     const handleAddCompostMethod = (methodInput: CompostingMethodInput) => handleAddItem(methodInput, addCompostingMethod);
     const handleAddGrowingGround = (groundInput: GrowingGroundInput) => handleAddItem(groundInput, addGrowingGround);
     const handleAddSeasonalTip = (tipInput: SeasonalTipInput) => handleAddItem(tipInput, addSeasonalTip);
-    const handleAddCalendarEvent = (eventData: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'is_completed' | 'event_types'>, groundId?: string) => {
+    const handleAddCalendarEvent = (eventData: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'is_completed' | 'event_types' | 'related_module' | 'related_entry_id'>, groundId?: string) => {
         if (!user) { setAppError("Must be logged in to add events."); return Promise.reject("User not logged in"); }
-        const fullEventData = { ...eventData, user_id: user.id, is_completed: false };
+        const fullEventData: Database['public']['Tables']['calendar_events']['Insert'] = { 
+            ...eventData, 
+            user_id: user.id, 
+            is_completed: false,
+            related_module: groundId ? 'growing_grounds' : null,
+            related_entry_id: groundId || null
+        };
         return handleAddItem({ event: fullEventData, groundId }, addCalendarEvent as any);
     }
 
@@ -235,6 +241,40 @@ const JardenModuleContent: React.FC = () => {
         } catch (err) {
             setAppError(err instanceof Error ? err.message : "Failed to populate plant data with AI.");
             console.error("AI Population Error:", err);
+        } finally {
+            setIsLoadingAi(false);
+        }
+    };
+    
+    const handleAiGenerateImage = async (itemId: string) => {
+        const plant = plants.find(p => p.id === itemId);
+        const ground = growingGrounds.find(g => g.id === itemId);
+        setIsLoadingAi(true);
+        setAppError(null);
+        try {
+            if (plant) {
+                const commonName = plant.plant_identification_overview?.common_names[0] || plant.plant_identification_overview.latin_name_scientific_name;
+                const generatedBase64 = await generatePlantImageWithAi(commonName);
+                if (generatedBase64) {
+                    await handleUpdatePlant(itemId, { display_image_url: generatedBase64, image_object_position_y: 50 });
+                } else {
+                    setAppError("AI image generation failed to return an image.");
+                }
+            } else if (ground) {
+                const plantNames = ground.plants
+                    .map(p => plants.find(pl => pl.id === p.plantId)?.plant_identification_overview.common_names[0])
+                    .filter((name): name is string => !!name);
+                const generatedBase64 = await generateGroundImageWithAi(plantNames.length > 0 ? plantNames : [ground.name]);
+                 if (generatedBase64) {
+                    await handleUpdateGrowingGround(itemId, { imageUrl: generatedBase64, image_object_position_y: 50 });
+                } else {
+                    setAppError("AI image generation failed to return an image.");
+                }
+            } else {
+                setAppError("Could not find the selected item to generate an image for.");
+            }
+        } catch (err) {
+            setAppError(err instanceof Error ? err.message : 'Failed to generate AI image.');
         } finally {
             setIsLoadingAi(false);
         }
@@ -353,10 +393,10 @@ const JardenModuleContent: React.FC = () => {
                 const parsedDate = new Date(`${task.dueDate}T00:00:00`);
                 if (isNaN(parsedDate.getTime())) {
                     console.warn(`AI returned an invalid date format: "${task.dueDate}". Skipping task: "${task.description}"`);
-                    continue; // Skip this task if date is invalid
+                    continue; // Skip this task if a date is invalid
                 }
     
-                const eventData: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'is_completed' | 'event_types'> = {
+                const eventData: Database['public']['Tables']['calendar_events']['Insert'] = {
                     title: task.description,
                     description: `AI-generated task for ${ground.name}`,
                     start_date: parsedDate.toISOString(),
@@ -365,9 +405,10 @@ const JardenModuleContent: React.FC = () => {
                     is_recurring: false,
                     recurrence_rule: null,
                     related_module: 'growing_grounds',
-                    related_entry_id: ground.id
+                    related_entry_id: ground.id,
+                    user_id: user.id
                 };
-                await addCalendarEvent({ event: { ...eventData, user_id: user.id, is_completed: false }, groundId: ground.id });
+                await addCalendarEvent({ event: eventData, groundId: ground.id });
             }
             await refreshAllData();
     
@@ -416,7 +457,7 @@ const JardenModuleContent: React.FC = () => {
 
 
     if (isDataLoading) {
-        return <div className="w-full h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900"><LoadingSpinner size="lg" /><p className="ml-4 text-slate-600 dark:text-slate-300">Loading your Jarden...</p></div>;
+        return <JardenLoadingScreen />;
     }
 
     if (!user && (activeModuleId === 'growinggrounds' || activeModuleId === 'calendar' || activeModuleId === 'profile' || activeModuleId === 'settings')) {
@@ -451,7 +492,6 @@ const JardenModuleContent: React.FC = () => {
                 setIsLoadingAi={setIsLoadingAi}
                 onUpdatePlant={handleUpdatePlant}
                 onPopulateWithStandardAI={onPopulateWithStandardAI}
-                onOpenCustomAiPromptModal={(data) => { setCustomAiModalData(data); setModalOpen('customAiPrompt'); }}
                 onUpdateFertilizer={handleUpdateFertilizer}
                 onUpdateCompostingMethod={handleUpdateCompostMethod}
                 onUpdateGrowingGround={handleUpdateGrowingGround}
@@ -467,6 +507,7 @@ const JardenModuleContent: React.FC = () => {
                 weatherLocationPreference={profile?.preferences?.weather || null}
                 setIsDefineLocationModalOpen={() => setModalOpen('defineLocation')}
                 onNavigateToRecentItem={handleNavigateToRecentItem}
+                handleAiGenerateImage={handleAiGenerateImage}
             />
             {/* Modals */}
             <AddNewPlantModal isOpen={modalOpen === 'addPlant'} onClose={() => setModalOpen(null)} onSave={handleAddPlant} moduleConfig={MODULES.find(m => m.id === 'florapedia')!} />
@@ -474,7 +515,7 @@ const JardenModuleContent: React.FC = () => {
             <AddNewCompostingMethodModal isOpen={modalOpen === 'addCompost'} onClose={() => setModalOpen(null)} onSave={handleAddCompostMethod} moduleConfig={MODULES.find(m => m.id === 'compostcorner')!} />
             <AddNewGrowingGroundModal isOpen={modalOpen === 'addGround'} onClose={() => setModalOpen(null)} onSave={handleAddGrowingGround} moduleConfig={MODULES.find(m => m.id === 'growinggrounds')!} />
             <AddNewSeasonalTipModal isOpen={modalOpen === 'addTip'} onClose={() => setModalOpen(null)} onSave={handleAddSeasonalTip} moduleConfig={MODULES.find(m => m.id === 'seasonaltips')!} />
-            <AddCalendarEventModal isOpen={modalOpen === 'addEvent'} onClose={() => setModalOpen(null)} onSave={handleAddCalendarEvent} eventTypes={eventTypes} moduleConfig={MODULES.find(m => m.id === 'calendar')!} groundId={contextualGroundId || undefined} />
+            <AddCalendarEventModal isOpen={modalOpen === 'addEvent'} onClose={() => setModalOpen(null)} onSave={handleAddCalendarEvent as any} eventTypes={eventTypes} moduleConfig={MODULES.find(m => m.id === 'calendar')!} groundId={contextualGroundId || undefined} />
 
             <DefineLocationModal isOpen={modalOpen === 'defineLocation'} onClose={() => setModalOpen(null)} onPreferenceSelect={handleUpdateWeatherPreference} currentPreference={profile?.preferences?.weather || null} />
             {customAiModalData && <CustomAiPromptModal isOpen={modalOpen === 'customAiPrompt'} onClose={() => setModalOpen(null)} onExecutePrompt={handleCustomAiPrompt} isLoading={isLoadingAi} plantName={customAiModalData.plantName} sectionKey={customAiModalData.sectionKey} moduleConfig={MODULES.find(m => m.id === 'florapedia')!} />}

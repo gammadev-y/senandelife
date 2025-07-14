@@ -167,16 +167,16 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
 
   if (!currentDisplayTip) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-white dark:bg-slate-800">
+      <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-white">
         <LightBulbIcon className={`w-24 h-24 text-${moduleConfig.baseColorClass}-400 mb-6`} />
-        <h2 className="text-3xl font-semibold text-slate-700 dark:text-slate-200 mb-2">Seasonal Tips</h2>
-        <p className="text-lg text-slate-500 dark:text-slate-400">Select a tip from the list or add a new one.</p>
+        <h2 className="text-3xl font-semibold text-[#1D3117] mb-2">Seasonal Tips</h2>
+        <p className="text-lg text-[#A67C52]">Select a tip from the list or add a new one.</p>
       </div>
     );
   }
 
   return (
-    <div className="h-full bg-white dark:bg-slate-800 overflow-y-auto custom-scrollbar">
+    <div className="h-full bg-white overflow-y-auto custom-scrollbar">
       {isCompactView && currentDisplayTip && onDeselect && !isEditing && (
         <button
           onClick={onDeselect}
@@ -191,7 +191,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
       <div className="relative">
         <div 
           ref={imageContainerRef} 
-          className={`w-full h-64 md:h-80 relative group/imgcontrol bg-slate-200 dark:bg-slate-700 ${user && isEditing && heroImageUrl && !showStockIcon ? 'cursor-grab active:cursor-grabbing' : ''}`}
+          className={`w-full h-64 md:h-80 relative group/imgcontrol bg-[#E5E3DD] ${user && isEditing && heroImageUrl && !showStockIcon ? 'cursor-grab active:cursor-grabbing' : ''}`}
           {...(user && isEditing && heroImageUrl && !showStockIcon ? dragHandlers : {})}
         >
           {!showStockIcon && heroImageUrl && (
@@ -205,7 +205,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
           )}
           {showStockIcon && (
             <div className="w-full h-full flex items-center justify-center">
-              <LightBulbIcon className={`w-32 h-32 text-${moduleConfig.baseColorClass}-300 dark:text-${moduleConfig.baseColorClass}-600`} />
+              <LightBulbIcon className={`w-32 h-32 text-[#B6B6B6]`} />
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
@@ -227,7 +227,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
                 </button>
             ) : (
                 <div className="flex space-x-2">
-                <button onClick={handleSaveChanges} className="p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg transition-all" aria-label="Save changes">
+                <button onClick={handleSaveChanges} className="p-2.5 bg-[#6C8C61] hover:bg-[#5a7850] text-white rounded-full shadow-lg transition-all" aria-label="Save changes">
                     <CheckIcon className="w-5 h-5" />
                 </button>
                 <button onClick={handleCancelEdit} className="p-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg transition-all" aria-label="Cancel edit">
@@ -262,13 +262,13 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
 
       <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto pb-24">
         <SectionCard title="Images" icon={PhotoIcon}>
-            <div className={`grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 ${isEditing ? 'p-2 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg' : ''}`}>
+            <div className={`grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 ${isEditing ? 'p-2 border border-dashed border-[#B6B6B6] rounded-lg' : ''}`}>
                 {currentDisplayTip.images?.map((image, index) => (
                     <div key={image.url + index} className="relative group aspect-square">
                         <img 
                             src={image.url} 
                             alt={`Tip image ${index+1}`} 
-                            className={`w-full h-full object-cover rounded-lg cursor-pointer transition-all duration-200 ${selectedImageIndex === index ? 'ring-2 ring-offset-2 ring-emerald-500' : 'opacity-70 hover:opacity-100'}`}
+                            className={`w-full h-full object-cover rounded-lg cursor-pointer transition-all duration-200 ${selectedImageIndex === index ? 'ring-2 ring-offset-2 ring-[#6C8C61]' : 'opacity-70 hover:opacity-100'}`}
                             onClick={() => setSelectedImageIndex(index)}
                         />
                         {user && isEditing && (
@@ -283,12 +283,12 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
                     </div>
                 ))}
                 {user && isEditing && (currentDisplayTip.images?.length || 0) < MAX_IMAGES_IN_DETAIL && (
-                    <div className="flex flex-col gap-2 items-center justify-center aspect-square border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg">
+                    <div className="flex flex-col gap-2 items-center justify-center aspect-square border-2 border-dashed border-[#B6B6B6] rounded-lg">
                          <input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageFileChange} className="hidden" id={`tipCoverImageUpload-${currentDisplayTip.id}`} />
-                        <button onClick={() => imageInputRef.current?.click()} className="p-2 text-slate-500 dark:text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors" title="Upload Image">
+                        <button onClick={() => imageInputRef.current?.click()} className="p-2 text-[#A67C52] hover:text-[#6C8C61] transition-colors" title="Upload Image">
                            <PhotoIcon className="w-6 h-6"/>
                         </button>
-                         <button onClick={handleAiGenerateCoverImage} disabled={isLoadingAiImage} className="p-2 text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors" title="Generate with AI">
+                         <button onClick={handleAiGenerateCoverImage} disabled={isLoadingAiImage} className="p-2 text-[#A67C52] hover:text-sky-500 transition-colors" title="Generate with AI">
                            {isLoadingAiImage ? <LoadingSpinner size="sm"/> : <SparklesIcon className="w-6 h-6"/>}
                         </button>
                     </div>
@@ -299,19 +299,19 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
         <SectionCard title="Tip Details" icon={InformationCircleIcon}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
             <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Content Type</label>
+                <label className="block text-xs font-medium text-[#A67C52] mb-1">Content Type</label>
                 {isEditing ? (
                     <select 
                         value={editedTipData?.content_type || 'url'}
                         onChange={e => handleSaveField('content_type', e.target.value as SeasonalTipContentType)}
-                        className={`w-full p-3 bg-slate-100 dark:bg-slate-700 rounded-lg border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-${moduleConfig.baseColorClass}-500 dark:focus:ring-${moduleConfig.baseColorClass}-400 focus:border-${moduleConfig.baseColorClass}-500 dark:focus:border-${moduleConfig.baseColorClass}-400 text-sm`}
+                        className={`w-full p-3 bg-[#E5E3DD] rounded-lg border-0 focus:ring-2 focus:ring-[#6C8C61] focus:outline-none text-sm`}
                         disabled={!user}
                     >
                         <option value="url">External URL</option>
                         <option value="article">Jarden Article</option>
                     </select>
                 ) : (
-                    <p className="text-sm p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg min-h-[2.5em] flex items-center">{currentDisplayTip.content_type === 'url' ? 'External URL' : 'Jarden Article'}</p>
+                    <p className="text-sm p-3 bg-[#E5E3DD] rounded-lg min-h-[2.5em] flex items-center">{currentDisplayTip.content_type === 'url' ? 'External URL' : 'Jarden Article'}</p>
                 )}
             </div>
             {currentDisplayTip.content_type === 'url' && (
@@ -342,7 +342,7 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
             placeholder="Jarden Team"
           />
           <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Published At</label>
+            <label className="block text-xs font-medium text-[#A67C52] mb-1">Published At</label>
             <p className="text-sm p-2">{new Date(currentDisplayTip.published_at || currentDisplayTip.created_at).toLocaleString()}</p>
           </div>
         </SectionCard>
@@ -353,11 +353,11 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
               href={currentDisplayTip.source_url} 
               target="_blank" 
               rel="noopener noreferrer"
-              className={`text-${moduleConfig.baseColorClass}-600 dark:text-${moduleConfig.baseColorClass}-400 hover:underline break-all text-sm font-medium`}
+              className={`text-[#6C8C61] hover:underline break-all text-sm font-medium`}
             >
               {currentDisplayTip.source_url}
             </a>
-            <p className="text-xs mt-1 text-slate-500 dark:text-slate-400">Click the link to view the external content.</p>
+            <p className="text-xs mt-1 text-[#A67C52]">Click the link to view the external content.</p>
           </SectionCard>
         )}
 
@@ -372,17 +372,17 @@ const SeasonalTipDetailView: React.FC<SeasonalTipDetailViewProps> = ({
                 disabled={!isEditing || !user}
                 textSize="text-sm"
                 placeholder="Write your article content here using Markdown..."
-                inputContainerClassName={`bg-slate-100 dark:bg-slate-700/50 rounded-lg focus-within:ring-2 focus-within:ring-${moduleConfig.baseColorClass}-500`}
+                inputContainerClassName={`bg-[#E5E3DD] rounded-lg focus-within:ring-2 focus-within:ring-${moduleConfig.baseColorClass}-500`}
                 inputFieldClass="w-full p-3 bg-transparent focus:outline-none min-h-[200px]"
               />
             ) : (
-              <div className="prose prose-sm dark:prose-invert max-w-none p-2 bg-slate-50 dark:bg-slate-700/30 rounded-lg">
+              <div className="prose prose-sm max-w-none p-2 bg-[#FDFCF9] rounded-lg">
                 {currentDisplayTip.article_markdown_content ? (
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {currentDisplayTip.article_markdown_content}
                   </ReactMarkdown>
                 ) : (
-                  <p className="italic text-slate-500 dark:text-slate-400">No article content yet.</p>
+                  <p className="italic text-[#A67C52]">No article content yet.</p>
                 )}
               </div>
             )}

@@ -1,7 +1,5 @@
 
 
-
-
 import React, { createContext, useState, useEffect, useCallback, useMemo, useContext, ReactNode } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
 import {
@@ -49,8 +47,8 @@ export const JardenDataProvider: React.FC<{ children: ReactNode }> = ({ children
     const [eventTypes, setEventTypes] = useState<EventType[]>([]);
     const [calendarEvents, setCalendarEvents] = useState<CalendarEventViewModel[]>([]);
 
-    const plantListItems = useMemo(() => plants.map(mapPlantToPlantListItemData), [plants]);
-    const seasonalTipListItems = useMemo(() => seasonalTips.map(mapSeasonalTipToListItemData), [seasonalTips]);
+    const plantListItems = useMemo(() => (plants || []).map(mapPlantToPlantListItemData), [plants]);
+    const seasonalTipListItems = useMemo(() => (seasonalTips || []).map(mapSeasonalTipToListItemData), [seasonalTips]);
     
     const refreshAllData = useCallback(async (isInitialLoad = false) => {
         if (isInitialLoad) {

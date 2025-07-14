@@ -1,10 +1,11 @@
 
 import React, { useRef, useState, useEffect } from 'react';
+import { produce } from 'immer';
 import { Fertilizer, FertilizerData } from '../types';
 import { FERTILIZER_SECTION_LABELS, MODULES } from '../constants';
 import SectionCard from './SectionCard';
 import EditableText from './EditableText';
-import { BeakerIcon, DocumentTextIcon, InformationCircleIcon, ListBulletIcon, VariableIcon, AdjustmentsHorizontalIcon, ClockIcon, ShieldCheckIcon, ArchiveBoxIcon, UserCircleIcon, ChatBubbleBottomCenterTextIcon, SparklesIcon, TagIcon, CubeIcon, PencilIcon, ChevronLeftIcon, ChevronUpIcon, ChevronDownIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { BeakerIcon, DocumentTextIcon, InformationCircleIcon, ListBulletIcon, VariableIcon, AdjustmentsHorizontalIcon, ClockIcon, ShieldCheckIcon, ArchiveBoxIcon, UserCircleIcon, ChatBubbleBottomCenterTextIcon, SparklesIcon, TagIcon, CubeIcon, PencilIcon, ChevronLeftIcon, ChevronUpIcon, ChevronDownIcon, ArrowPathIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { convertFileToBase64 } from '../utils/imageUtils';
 import { useAuth } from '../../../../context/AuthContext';
 
@@ -18,70 +19,75 @@ interface FertilizerDetailViewProps {
   isCompactView: boolean;
 }
 
-const FertilizerDetailView: React.FC<FertilizerDetailViewProps> = ({ fertilizer, onUpdateFertilizer, setAppError, moduleConfig, onDeselect, isCompactView }) => {
+const FertilizerDetailView: React.FC<FertilizerDetailViewProps> = ({ fertilizer: initialFertilizer, onUpdateFertilizer, setAppError, moduleConfig, onDeselect, isCompactView }) => {
   const { user } = useAuth();
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [imageObjectPositionY, setImageObjectPositionY] = useState(fertilizer?.data.image_object_position_y || 50);
+  const [editableFertilizer, setEditableFertilizer] = useState<Fertilizer | null>(null);
 
   useEffect(() => {
-    if (fertilizer) {
-      setImageObjectPositionY(fertilizer.data.image_object_position_y || 50);
+    if (!isEditing) {
+      setEditableFertilizer(initialFertilizer ? JSON.parse(JSON.stringify(initialFertilizer)) : null);
     }
-    setIsEditing(false); // Reset editing state when fertilizer changes
-  }, [fertilizer]);
+  }, [initialFertilizer, isEditing]);
 
-  const handleSaveDirectField = (field: keyof Pick<Fertilizer, 'fertilizer_name' | 'type' | 'form'>, value: string) => {
-    if (fertilizer) {
-      onUpdateFertilizer(fertilizer.id, { [field]: value });
-    }
-  };
-
-  const handleSaveDataField = (field: keyof FertilizerData, value: string | number | undefined) => {
-    if (fertilizer) {
-      const updatedData = { ...fertilizer.data, [field]: value };
-      onUpdateFertilizer(fertilizer.id, { data: updatedData });
-    }
+  const handleFieldChange = (path: string, value: any) => {
+    if (!editableFertilizer) return;
+    setEditableFertilizer(current => produce(current!, draft => {
+      if (!draft) return;
+      let currentPath: any = draft;
+      const keys = path.split('.');
+      for (let i = 0; i < keys.length - 1; i++) {
+        currentPath = currentPath[keys[i]];
+      }
+      currentPath[keys[keys.length - 1]] = value;
+    }));
   };
 
   const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!fertilizer) return;
+    if (!editableFertilizer) return;
     const file = event.target.files?.[0];
     if (file) {
       try {
         setAppError(null);
         const base64 = await convertFileToBase64(file);
-        setImageObjectPositionY(50); // Reset position for new image
-        handleSaveDataField('imageUrl', base64);
-        handleSaveDataField('image_object_position_y', 50); // Explicitly save reset position
+        handleFieldChange('data.imageUrl', base64);
+        handleFieldChange('data.image_object_position_y', 50);
       } catch (err) {
-        console.error("Error converting file to base64:", err);
-        setAppError("Failed to update image. Please try another file.");
+        setAppError("Failed to update image.");
       }
     }
   };
   
   const handleImagePositionChange = (direction: 'up' | 'down' | 'reset') => {
-    if (!fertilizer) return;
-    let newPosition = imageObjectPositionY;
+    if (!editableFertilizer) return;
+    let newPosition = editableFertilizer.data.image_object_position_y || 50;
     const step = 5;
-    if (direction === 'up') {
-      newPosition = Math.max(0, imageObjectPositionY - step);
-    } else if (direction === 'down') {
-      newPosition = Math.min(100, imageObjectPositionY + step);
-    } else if (direction === 'reset') {
-      newPosition = 50;
+    if (direction === 'up') newPosition = Math.max(0, newPosition - step);
+    else if (direction === 'down') newPosition = Math.min(100, newPosition + step);
+    else newPosition = 50;
+    handleFieldChange('data.image_object_position_y', newPosition);
+  };
+  
+  const handleSave = () => {
+    if (initialFertilizer && editableFertilizer) {
+      onUpdateFertilizer(initialFertilizer.id, editableFertilizer);
     }
-    setImageObjectPositionY(newPosition);
-    handleSaveDataField('image_object_position_y', newPosition);
+    setIsEditing(false);
   };
 
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditableFertilizer(initialFertilizer);
+  };
+
+  const fertilizer = editableFertilizer || initialFertilizer;
 
   if (!fertilizer) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center p-8 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800"> {/* Changed neutral to slate */}
-        <BeakerIcon className={`w-24 h-24 text-${moduleConfig.baseColorClass}-400 mb-6`} />
-        <h2 className="text-3xl font-semibold text-slate-700 dark:text-slate-200 mb-2">NutriBase</h2> {/* Changed neutral to slate */}
+      <div className="flex flex-col items-center justify-center h-full text-center p-8 text-[#A67C52] bg-white">
+        <BeakerIcon className="w-24 h-24 text-[#6C8C61] mb-6" />
+        <h2 className="text-3xl font-semibold text-[#1D3117] mb-2">NutriBase</h2>
         <p className="text-lg">Select a fertilizer from the list to view its details, or add a new one.</p>
       </div>
     );
@@ -113,7 +119,7 @@ const FertilizerDetailView: React.FC<FertilizerDetailViewProps> = ({ fertilizer,
   const renderEditableDataField = (fieldKey: keyof FertilizerData, isTextarea: boolean = true, placeholder?: string, labelTextOverride?: string): React.ReactNode => (
     <EditableText
       currentValue={String(fertilizer.data[fieldKey] ?? '')}
-      onSave={(val) => handleSaveDataField(fieldKey, val)}
+      onSave={(val) => handleFieldChange(`data.${fieldKey}`, val)}
       textarea={isTextarea}
       placeholder={placeholder || `Details about ${FERTILIZER_SECTION_LABELS[fieldKey]?.toLowerCase()}...`}
       labelText={labelTextOverride || FERTILIZER_SECTION_LABELS[fieldKey]}
@@ -122,12 +128,14 @@ const FertilizerDetailView: React.FC<FertilizerDetailViewProps> = ({ fertilizer,
     />
   );
 
+  const imageObjectPositionY = fertilizer.data.image_object_position_y || 50;
+
   return (
-    <div className="p-4 md:p-6 lg:p-8 h-full overflow-y-auto bg-white dark:bg-slate-800 custom-scrollbar"> {/* Changed neutral to slate */}
+    <div className="p-4 md:p-6 lg:p-8 h-full overflow-y-auto bg-white custom-scrollbar">
       {isCompactView && fertilizer && onDeselect && !isEditing && (
         <button
           onClick={onDeselect}
-          className={`mb-4 flex items-center px-4 py-2 text-sm font-medium bg-slate-100 dark:bg-slate-700 text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-${moduleConfig.baseColorClass}-500`} // Changed neutral to slate
+          className={`mb-4 flex items-center px-4 py-2 text-sm font-medium bg-[#E5E3DD] text-[#6C8C61] hover:bg-[#DCEFD6] rounded-full shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#6C8C61]`}
           aria-label="Back to fertilizer list"
         >
           <ChevronLeftIcon className="w-5 h-5 mr-2" />
@@ -135,13 +143,13 @@ const FertilizerDetailView: React.FC<FertilizerDetailViewProps> = ({ fertilizer,
         </button>
       )}
       <div className="max-w-4xl mx-auto space-y-5">
-        <div className={`p-5 bg-slate-100 dark:bg-slate-800 shadow-sm rounded-2xl`}> {/* Changed neutral to slate */}
+        <div className={`p-5 bg-[#FDFCF9] shadow-sm rounded-2xl`}>
           <div className="flex flex-col md:flex-row items-start gap-5">
             <div className="relative group/imgcontrol flex-shrink-0">
               <img 
                 src={fertilizer.data.imageUrl || `https://picsum.photos/seed/${fertilizer.fertilizer_name.trim().toLowerCase().replace(/\s+/g, '-')}/200/200`} 
                 alt={fertilizer.fertilizer_name} 
-                className={`w-32 h-32 md:w-36 md:h-36 rounded-2xl object-cover border-4 border-${moduleConfig.baseColorClass}-300 dark:border-${moduleConfig.baseColorClass}-600 shadow-lg`}
+                className={`w-32 h-32 md:w-36 md:h-36 rounded-2xl object-cover border-4 border-[#DCEFD6] shadow-lg`}
                 style={{ objectPosition: `50% ${imageObjectPositionY}%`}}
                 onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -162,7 +170,7 @@ const FertilizerDetailView: React.FC<FertilizerDetailViewProps> = ({ fertilizer,
                     <button 
                         onClick={() => imageInputRef.current?.click()}
                         title="Change fertilizer image"
-                        className={`absolute bottom-2 right-2 p-2 bg-slate-50 dark:bg-slate-700 rounded-full shadow-md opacity-0 group-hover/imgcontrol:opacity-100 transition-opacity hover:bg-slate-200 dark:hover:bg-slate-600 text-${moduleConfig.baseColorClass}-600 dark:text-${moduleConfig.baseColorClass}-300`} // Changed neutral to slate
+                        className={`absolute bottom-2 right-2 p-2 bg-white rounded-full shadow-md opacity-0 group-hover/imgcontrol:opacity-100 transition-opacity hover:bg-[#E5E3DD] text-[#6C8C61]`}
                         aria-label="Edit fertilizer image"
                     >
                         <PencilIcon className="w-5 h-5" />
@@ -180,16 +188,16 @@ const FertilizerDetailView: React.FC<FertilizerDetailViewProps> = ({ fertilizer,
             <div className="flex-grow">
               <EditableText
                   currentValue={fertilizer.fertilizer_name}
-                  onSave={(val) => handleSaveDirectField('fertilizer_name', val)}
+                  onSave={(val) => handleFieldChange('fertilizer_name', val)}
                   labelText="Fertilizer Name"
-                  textClassName={`text-2xl md:text-3xl font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 mb-2`}
-                  inputFieldClass={`text-2xl md:text-3xl font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300`}
+                  textClassName={`text-2xl md:text-3xl font-medium text-[#6C8C61] mb-2`}
+                  inputFieldClass={`text-2xl md:text-3xl font-medium text-[#6C8C61]`}
                   disabled={!isEditing || !user}
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
                  <EditableText
                     currentValue={fertilizer.type}
-                    onSave={(val) => handleSaveDirectField('type', val)}
+                    onSave={(val) => handleFieldChange('type', val)}
                     labelText={FERTILIZER_SECTION_LABELS.type}
                     textarea={false}
                     textSize="text-sm"
@@ -197,7 +205,7 @@ const FertilizerDetailView: React.FC<FertilizerDetailViewProps> = ({ fertilizer,
                  />
                  <EditableText
                     currentValue={fertilizer.form}
-                    onSave={(val) => handleSaveDirectField('form', val)}
+                    onSave={(val) => handleFieldChange('form', val)}
                     labelText={FERTILIZER_SECTION_LABELS.form}
                     textarea={false}
                     textSize="text-sm"
@@ -252,15 +260,15 @@ const FertilizerDetailView: React.FC<FertilizerDetailViewProps> = ({ fertilizer,
 
       </div>
        {user && (
-            <div className="sticky bottom-0 right-0 w-full p-4 bg-gradient-to-t from-white dark:from-slate-800 to-transparent flex justify-end">
+            <div className="sticky bottom-0 right-0 w-full p-4 bg-gradient-to-t from-white to-transparent flex justify-end">
                 {!isEditing ? (
-                    <button onClick={() => setIsEditing(true)} className="px-5 py-2.5 bg-slate-700 text-white rounded-full shadow-lg hover:bg-slate-800 flex items-center gap-2">
+                    <button onClick={() => setIsEditing(true)} className="px-5 py-2.5 bg-[#1D3117] text-white rounded-full shadow-lg hover:bg-[#3D2A15] flex items-center gap-2">
                         <PencilIcon className="w-5 h-5"/> Edit Details
                     </button>
                 ) : (
                     <div className="flex gap-3">
-                        <button onClick={() => { setIsEditing(false); onUpdateFertilizer(fertilizer.id, fertilizer); }} className="px-5 py-2.5 bg-slate-200 text-slate-800 rounded-full shadow-lg hover:bg-slate-300">Cancel</button>
-                        <button onClick={() => setIsEditing(false)} className="px-5 py-2.5 bg-emerald-600 text-white rounded-full shadow-lg hover:bg-emerald-700">Save Changes</button>
+                        <button onClick={handleCancel} className="px-5 py-2.5 bg-[#E5E3DD] text-[#2C2C2C] rounded-full shadow-lg hover:bg-[#DCEFD6]">Cancel</button>
+                        <button onClick={handleSave} className="px-5 py-2.5 bg-[#6C8C61] text-white rounded-full shadow-lg hover:bg-[#5a7850]">Save Changes</button>
                     </div>
                 )}
             </div>
