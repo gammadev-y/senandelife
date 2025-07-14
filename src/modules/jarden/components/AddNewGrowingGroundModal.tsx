@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { GrowingGroundInput, GrowingGround } from '../types';
 import { XMarkIcon, PhotoIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
-import { convertFileToBase64 } from '../utils/imageUtils';
+import { convertFileToBase64, compressFileBeforeUpload } from '../utils/imageUtils';
 import { MODULES, GROUND_TYPES } from '../constants';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -28,12 +28,14 @@ const AddNewGrowingGroundModal: React.FC<AddNewGrowingGroundModalProps> = ({ isO
     const file = event.target.files?.[0];
     if (file) {
       try {
-        const base64 = await convertFileToBase64(file);
-        setImageBase64(base64);
         setError(null);
+        const compressedFile = await compressFileBeforeUpload(file);
+        const base64 = await convertFileToBase64(compressedFile);
+        setImageBase64(base64);
       } catch (err) {
-        console.error("Error converting file to base64:", err);
-        setError("Failed to load image. Please try another file.");
+        console.error("Error processing file:", err);
+        const errorMessage = err instanceof Error ? err.message : "Failed to load image. Please try another file.";
+        setError(errorMessage);
         setImageBase64(null);
       }
     }
@@ -68,8 +70,7 @@ const AddNewGrowingGroundModal: React.FC<AddNewGrowingGroundModalProps> = ({ isO
         description: description.trim() || undefined,
         imageUrl: imageBase64 || undefined,
       });
-      // On success, parent will close the modal
-      clearForm();
+      handleClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred while saving.");
     } finally {

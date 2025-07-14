@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 
 // IMPORTANT: The API key must be loaded from environment variables.
 // This is a hard requirement for the project.
-const apiKey = process.env.GEMINI_API_KEY;
+const apiKey = process.env.API_KEY;
 
 
 if (!apiKey) {

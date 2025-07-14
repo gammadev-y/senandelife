@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import {
@@ -130,7 +132,6 @@ const JardenModuleContent: React.FC = () => {
         try {
             const newItem = await addFn(item, user?.id);
             await refreshAllData();
-            setModalOpen(null);
             if (newItem && newItem.id) {
                 let itemTypeString = '';
                 if (activeModuleId === 'florapedia') itemTypeString = 'plant';
@@ -144,10 +145,16 @@ const JardenModuleContent: React.FC = () => {
                 }
             }
             return newItem;
-        } catch (error) {
-            setAppError(error instanceof Error ? error.message : "Failed to save item.");
+        } catch (error: any) {
+            let errorMessage = "Failed to save item.";
+            if (error.code === '23505' && error.message.includes('flora_pedia_latin_name_scientific_name_key')) {
+                 errorMessage = "A plant with this scientific name already exists.";
+            } else if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+            setAppError(errorMessage);
             console.error(error);
-            throw error;
+            throw new Error(errorMessage);
         }
     };
     
@@ -206,7 +213,7 @@ const JardenModuleContent: React.FC = () => {
     const handleAddSeasonalTip = (tipInput: SeasonalTipInput) => handleAddItem(tipInput, addSeasonalTip);
     const handleAddCalendarEvent = (eventData: Omit<CalendarEvent, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'is_completed' | 'event_types'>, groundId?: string) => {
         if (!user) { setAppError("Must be logged in to add events."); return Promise.reject("User not logged in"); }
-        const fullEventData = { ...eventData, user_id: user.id };
+        const fullEventData = { ...eventData, user_id: user.id, is_completed: false };
         return handleAddItem({ event: fullEventData, groundId }, addCalendarEvent as any);
     }
 
@@ -360,7 +367,7 @@ const JardenModuleContent: React.FC = () => {
                     related_module: 'growing_grounds',
                     related_entry_id: ground.id
                 };
-                await addCalendarEvent({ event: { ...eventData, user_id: user.id }, groundId: ground.id });
+                await addCalendarEvent({ event: { ...eventData, user_id: user.id, is_completed: false }, groundId: ground.id });
             }
             await refreshAllData();
     

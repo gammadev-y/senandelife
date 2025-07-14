@@ -2,13 +2,14 @@
 import React, { useState, useRef } from 'react';
 import { CompostingMethodInput, CompostingMethod } from '../types';
 import { XMarkIcon, PhotoIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
-import { convertFileToBase64 } from '../utils/imageUtils';
+import { convertFileToBase64, compressFileBeforeUpload } from '../utils/imageUtils';
 import { MODULES } from '../constants';
+import LoadingSpinner from './LoadingSpinner';
 
 interface AddNewCompostingMethodModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (methodInput: CompostingMethodInput) => void;
+  onSave: (methodInput: CompostingMethodInput) => Promise<any>;
   moduleConfig: typeof MODULES[0];
 }
 
@@ -24,6 +25,7 @@ const AddNewCompostingMethodModal: React.FC<AddNewCompostingMethodModalProps> = 
   const [description, setDescription] = useState('');
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -32,12 +34,14 @@ const AddNewCompostingMethodModal: React.FC<AddNewCompostingMethodModalProps> = 
     const file = event.target.files?.[0];
     if (file) {
       try {
-        const base64 = await convertFileToBase64(file);
-        setImageBase64(base64);
         setError(null);
+        const compressedFile = await compressFileBeforeUpload(file);
+        const base64 = await convertFileToBase64(compressedFile);
+        setImageBase64(base64);
       } catch (err) {
-        console.error("Error converting file to base64:", err);
-        setError("Failed to load image. Please try another file.");
+        console.error("Error processing file:", err);
+        const errorMessage = err instanceof Error ? err.message : "Failed to load image. Please try another file.";
+        setError(errorMessage);
         setImageBase64(null);
       }
     }
@@ -49,22 +53,35 @@ const AddNewCompostingMethodModal: React.FC<AddNewCompostingMethodModalProps> = 
     setDescription('');
     setImageBase64(null);
     setError(null);
+    setIsSaving(false);
     if(fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleSubmit = () => {
+  const handleClose = () => {
+    clearForm();
+    onClose();
+  };
+
+  const handleSubmit = async () => {
     if (!name.trim()) {
       setError("Method name is required.");
       return;
     }
     setError(null);
-    onSave({
-      name: name.trim(),
-      approach: approach,
-      description: description.trim() || undefined,
-      imageUrl: imageBase64 || undefined,
-    });
-    clearForm();
+    setIsSaving(true);
+    try {
+      await onSave({
+        name: name.trim(),
+        approach: approach,
+        description: description.trim() || undefined,
+        imageUrl: imageBase64 || undefined,
+      });
+      handleClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred while saving.");
+    } finally {
+      setIsSaving(false);
+    }
   };
   
   const inputBaseClass = "w-full px-3 py-2.5 border-0 border-b-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none sm:text-sm transition-colors";
@@ -77,7 +94,7 @@ const AddNewCompostingMethodModal: React.FC<AddNewCompostingMethodModalProps> = 
         <div className="flex justify-between items-center mb-5">
           <h2 className="text-xl font-medium text-slate-800 dark:text-slate-100">Add New Composting Method</h2>
           <button
-            onClick={() => { clearForm(); onClose(); }}
+            onClick={handleClose}
             className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors duration-200 ease-in-out"
             aria-label="Close modal"
           >
@@ -168,17 +185,19 @@ const AddNewCompostingMethodModal: React.FC<AddNewCompostingMethodModalProps> = 
         <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-700">
           <button
             type="button"
-            onClick={() => { clearForm(); onClose(); }}
-            className={`px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400 transition-all duration-200 ease-in-out`}
+            onClick={handleClose}
+            disabled={isSaving}
+            className={`px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400 transition-all duration-200 ease-in-out disabled:opacity-70`}
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className={`px-6 py-2 text-sm font-medium text-black bg-${moduleConfig.baseColorClass}-500 hover:bg-${moduleConfig.baseColorClass}-600 dark:bg-${moduleConfig.baseColorClass}-400 dark:hover:bg-${moduleConfig.baseColorClass}-500 dark:text-slate-900 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 focus:ring-${moduleConfig.baseColorClass}-500 transition-all duration-200 ease-in-out`}
+            disabled={isSaving}
+            className={`min-w-[120px] px-6 py-2 text-sm font-medium text-black bg-${moduleConfig.baseColorClass}-500 hover:bg-${moduleConfig.baseColorClass}-600 dark:bg-${moduleConfig.baseColorClass}-400 dark:hover:bg-${moduleConfig.baseColorClass}-500 dark:text-slate-900 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 focus:ring-${moduleConfig.baseColorClass}-500 transition-all duration-200 ease-in-out disabled:opacity-70 flex items-center justify-center`}
           >
-            Save Method
+            {isSaving ? <LoadingSpinner size="sm" color="text-slate-900" /> : 'Save Method'}
           </button>
         </div>
       </div>

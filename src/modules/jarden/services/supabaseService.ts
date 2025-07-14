@@ -1,5 +1,6 @@
 
 
+
 import { supabase } from '../../../../services/supabase';
 import {
   Plant, PlantInput, Fertilizer, FertilizerInput, CompostingMethod, CompostingMethodInput,
@@ -8,7 +9,7 @@ import {
   EventType, CalendarEvent, CalendarEventViewModel
 } from '../types';
 import { PlantListItemData, SeasonalTipListItemData } from './idbServiceTypes'; 
-import { produce } from 'https://esm.sh/immer@10.0.3' ;
+import { produce } from 'immer' ;
 import { INITIAL_PLANTS_DATA_FOR_SEEDING, INITIAL_FERTILIZERS_DATA_FOR_SEEDING, INITIAL_COMPOSTING_METHODS_DATA_FOR_SEEDING } from './supabaseSeedData';
 import { EVENT_TYPES_SEED_DATA } from '../constants';
 import { decode } from 'base64-arraybuffer';
@@ -209,41 +210,39 @@ export const mapFloraPediaRowToPlant = (row: FloraPediaTableRow): Plant => {
 };
 
 const mapPlantToFloraPediaRow = (plant: Partial<Plant>): Omit<FloraPediaTableRow, 'id' | 'created_at' | 'updated_at'> => {
-  // Destructure all known top-level properties of the Plant interface
-  const {
-      id, created_at, updated_at,
-      plant_identification_overview,
-      // The rest of the properties are part of the 'data' JSONB column
-      ...jsonData
-  } = plant;
+    const {
+        id,
+        created_at,
+        updated_at,
+        // The rest of the properties are part of the 'data' jsonb column
+        ...jsonData
+    } = plant;
 
-  // Extract fields that are direct columns in the flora_pedia table
-  const {
-      latin_name_scientific_name,
-      common_names,
-      plant_family,
-      plant_type_category,
-      description_brief,
-      cultivar_variety,
-      growth_structure_habit,
-      life_cycle
-  } = plant_identification_overview || {};
-  
-  // Construct the row for insertion/updating
-  const row: Omit<FloraPediaTableRow, 'id' | 'created_at' | 'updated_at'> = {
-      latin_name_scientific_name: latin_name_scientific_name || 'N/A',
-      common_names: common_names || [],
-      plant_family: plant_family || null,
-      plant_type_category: plant_type_category || null,
-      description_brief: description_brief || null,
-      cultivar_variety: cultivar_variety || null,
-      parent_plant_id: plant.parent_plant_id || null,
-      growth_structure_habit: growth_structure_habit || null,
-      life_cycle: life_cycle || null,
-      data: jsonData as Json,
-  };
+    const {
+        latin_name_scientific_name,
+        common_names,
+        plant_family,
+        plant_type_category,
+        description_brief,
+        cultivar_variety,
+        growth_structure_habit,
+        life_cycle,
+    } = plant.plant_identification_overview || {};
 
-  return row;
+    const row: Omit<FloraPediaTableRow, 'id' | 'created_at' | 'updated_at'> = {
+        latin_name_scientific_name: latin_name_scientific_name || 'N/A',
+        common_names: common_names || [],
+        plant_family: plant_family || null,
+        plant_type_category: plant_type_category || null,
+        description_brief: description_brief || null,
+        cultivar_variety: cultivar_variety || null,
+        parent_plant_id: plant.parent_plant_id || null,
+        growth_structure_habit: growth_structure_habit || null,
+        life_cycle: life_cycle || null,
+        data: jsonData as Json,
+    };
+
+    return row;
 };
 
 export const mapPlantToPlantListItemData = (plant: Plant): PlantListItemData => ({
@@ -270,7 +269,7 @@ export const addPlant = async (plantData: Omit<Plant, 'id' | 'created_at' | 'upd
     const processedPlantData = { ...plantData };
     if (processedPlantData.display_image_url && processedPlantData.display_image_url.startsWith('data:image')) {
         const imageName = `${Date.now()}-${(processedPlantData.plant_identification_overview.common_names[0] || 'plant').replace(/\s+/g, '-')}.jpg`;
-        processedPlantData.display_image_url = await uploadBase64Image('plant-images', `public/${imageName}`, processedPlantData.display_image_url);
+        processedPlantData.display_image_url = await uploadBase64Image('flora-pedia-images', `public/${imageName}`, processedPlantData.display_image_url);
     }
     
     const rowToInsert = mapPlantToFloraPediaRow(processedPlantData);
@@ -286,7 +285,7 @@ export const updatePlant = async (plantId: string, updates: Partial<Plant>): Pro
     const processedUpdates = { ...updates };
     if (processedUpdates.display_image_url && processedUpdates.display_image_url.startsWith('data:image')) {
         const imageName = `${Date.now()}-${(processedUpdates.plant_identification_overview?.common_names?.[0] || plantId).replace(/\s+/g, '-')}.jpg`;
-        processedUpdates.display_image_url = await uploadBase64Image('plant-images', `public/${imageName}`, processedUpdates.display_image_url);
+        processedUpdates.display_image_url = await uploadBase64Image('flora-pedia-images', `public/${imageName}`, processedUpdates.display_image_url);
     }
 
     const { data: existingData, error: fetchError } = await supabase.from('flora_pedia').select().eq('id', plantId).single();
@@ -324,7 +323,7 @@ export async function updateUserProfile(userId: string, updates: Partial<UserPro
   const processedUpdates = { ...updates };
   if (processedUpdates.avatar_url && processedUpdates.avatar_url.startsWith('data:image')) {
       const avatarPath = `public/${userId}/avatar.jpg`;
-      processedUpdates.avatar_url = await uploadBase64Image('avatars', avatarPath, processedUpdates.avatar_url);
+      processedUpdates.avatar_url = await uploadBase64Image('user-avatar', avatarPath, processedUpdates.avatar_url);
   }
   
   const { data, error } = await supabase
@@ -351,7 +350,7 @@ export const addFertilizer = async (fertilizerData: FertilizerInput): Promise<Fe
     let imageUrl = fertilizerData.imageUrl;
     if (imageUrl && imageUrl.startsWith('data:image')) {
         const imageName = `${Date.now()}-${fertilizerData.name.replace(/\s+/g, '-')}.jpg`;
-        imageUrl = await uploadBase64Image('item-images', `public/fertilizers/${imageName}`, imageUrl);
+        imageUrl = await uploadBase64Image('fertilizer-images', `public/${imageName}`, imageUrl);
     }
     const { data, error } = await supabase.from('nutri_base').insert({
         fertilizer_name: fertilizerData.name,
@@ -370,7 +369,7 @@ export const updateFertilizer = async (id: string, updates: Partial<Fertilizer>)
     if (!supabase) throw new Error("Supabase client not initialized.");
      if (updates.data?.imageUrl && updates.data.imageUrl.startsWith('data:image')) {
         const imageName = `${Date.now()}-${(updates.fertilizer_name || id).replace(/\s+/g, '-')}.jpg`;
-        updates.data.imageUrl = await uploadBase64Image('item-images', `public/fertilizers/${imageName}`, updates.data.imageUrl);
+        updates.data.imageUrl = await uploadBase64Image('fertilizer-images', `public/${imageName}`, updates.data.imageUrl);
     }
     const { data, error } = await supabase.from('nutri_base').update(updates).eq('id', id).select().single();
     if (error) throw error;
@@ -389,7 +388,7 @@ export const addCompostingMethod = async (methodData: CompostingMethodInput): Pr
     let imageUrl = methodData.imageUrl;
     if (imageUrl && imageUrl.startsWith('data:image')) {
         const imageName = `${Date.now()}-${methodData.name.replace(/\s+/g, '-')}.jpg`;
-        imageUrl = await uploadBase64Image('item-images', `public/compost-methods/${imageName}`, imageUrl);
+        imageUrl = await uploadBase64Image('compost-method-images', `public/${imageName}`, imageUrl);
     }
     const { data, error } = await supabase.from('compost_corner').insert({
         method_name: methodData.name,
@@ -408,7 +407,7 @@ export const updateCompostingMethod = async (id: string, updates: Partial<Compos
     if (!supabase) throw new Error("Supabase client not initialized.");
     if (updates.data?.imageUrl && updates.data.imageUrl.startsWith('data:image')) {
         const imageName = `${Date.now()}-${(updates.method_name || id).replace(/\s+/g, '-')}.jpg`;
-        updates.data.imageUrl = await uploadBase64Image('item-images', `public/compost-methods/${imageName}`, updates.data.imageUrl);
+        updates.data.imageUrl = await uploadBase64Image('compost-method-images', `public/${imageName}`, updates.data.imageUrl);
     }
     const { data, error } = await supabase.from('compost_corner').update(updates).eq('id', id).select().single();
     if (error) throw error;
@@ -427,7 +426,7 @@ export const addGrowingGround = async (groundInput: GrowingGroundInput, userId: 
     let imageUrl = groundInput.imageUrl;
     if (imageUrl && imageUrl.startsWith('data:image')) {
         const imageName = `${Date.now()}-${groundInput.name.replace(/\s+/g, '-')}.jpg`;
-        imageUrl = await uploadBase64Image('ground-images', `user/${userId}/${imageName}`, imageUrl);
+        imageUrl = await uploadBase64Image('growing-grounds-gallery-images', `user/${userId}/${imageName}`, imageUrl);
     }
     const newGroundData: GrowingGroundData = {
         description: groundInput.description || "A new growing ground.",
@@ -448,18 +447,59 @@ export const addGrowingGround = async (groundInput: GrowingGroundInput, userId: 
     if (error) throw error;
     return { ...data.data as GrowingGroundData, id: data.id, name: data.name, created_at: data.created_at, updated_at: data.updated_at };
 };
+
 export const updateGrowingGround = async (id: string, updates: Partial<GrowingGround>): Promise<GrowingGround> => {
     if (!supabase) throw new Error("Supabase client not initialized.");
-    const { user } = (await supabase.auth.getUser()).data;
-    if (updates.imageUrl && updates.imageUrl.startsWith('data:image') && user) {
-        const imageName = `${Date.now()}-${(updates.name || id).replace(/\s+/g, '-')}.jpg`;
-        updates.imageUrl = await uploadBase64Image('ground-images', `user/${user.id}/${imageName}`, updates.imageUrl);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User must be authenticated to update a growing ground.");
+
+    const mutableUpdates = JSON.parse(JSON.stringify(updates)); // Deep copy
+
+    // Handle main image
+    if (mutableUpdates.imageUrl && mutableUpdates.imageUrl.startsWith('data:image')) {
+        const imageName = `${Date.now()}-${(mutableUpdates.name || id).replace(/\s+/g, '-')}.jpg`;
+        mutableUpdates.imageUrl = await uploadBase64Image('growing-grounds-gallery-images', `user/${user.id}/${imageName}`, mutableUpdates.imageUrl);
     }
-    const { name, created_at, updated_at, id: groundId, ...data } = updates;
-    const { data: updatedData, error } = await supabase.from('growing_grounds').update({ name, data }).eq('id', id).select().single();
+
+    // Handle log entry photos
+    if (mutableUpdates.logs && Array.isArray(mutableUpdates.logs)) {
+        for (const log of mutableUpdates.logs) {
+            if (log.photoUrls && Array.isArray(log.photoUrls)) {
+                const uploadedUrls = await Promise.all(
+                    log.photoUrls.map(async (url: string, index: number) => {
+                        if (url && url.startsWith('data:image')) {
+                            const logId = log.id || `new-${Date.now()}`;
+                            const imageName = `${Date.now()}-log-${logId}-${index}.jpg`;
+                            return await uploadBase64Image('growing-grounds-log-entry-photos', `user/${user.id}/${id}/${imageName}`, url);
+                        }
+                        return url;
+                    })
+                );
+                log.photoUrls = uploadedUrls.filter(Boolean);
+            }
+        }
+    }
+
+    const { name, id: groundId, created_at, updated_at, ...jsonData } = mutableUpdates;
+
+    const updatePayload: Partial<Database['public']['Tables']['growing_grounds']['Update']> = {
+        data: jsonData as Json,
+    };
+    if (name) {
+        updatePayload.name = name;
+    }
+
+    const { data: updatedData, error } = await supabase.from('growing_grounds')
+        .update(updatePayload)
+        .eq('id', id)
+        .select()
+        .single();
+        
     if (error) throw error;
+
     return { ...updatedData.data as GrowingGroundData, id: updatedData.id, name: updatedData.name, created_at: updatedData.created_at, updated_at: updatedData.updated_at };
 };
+
 export const deleteGrowingGround = async (id: string): Promise<void> => {
     if (!supabase) throw new Error("Supabase client not initialized.");
     const { error } = await supabase.from('growing_grounds').delete().eq('id', id);
@@ -511,7 +551,7 @@ export const addSeasonalTip = async (tipInput: SeasonalTipInput): Promise<Season
         (tipInput.images || []).map(async (img, index) => {
             if (img.url.startsWith('data:image')) {
                 const imageName = `${Date.now()}-tip-${tipInput.title.replace(/\s+/g, '-')}-${index}.jpg`;
-                const newUrl = await uploadBase64Image('tip-images', `public/${imageName}`, img.url);
+                const newUrl = await uploadBase64Image('seasonal-tips-images', `public/${imageName}`, img.url);
                 return { ...img, url: newUrl };
             }
             return img;
@@ -532,7 +572,7 @@ export const updateSeasonalTip = async (id: string, updates: Partial<SeasonalTip
             updates.images.map(async (img, index) => {
                 if (img.url.startsWith('data:image')) {
                     const imageName = `${Date.now()}-tip-${(updates.title || id).replace(/\s+/g, '-')}-${index}.jpg`;
-                    const newUrl = await uploadBase64Image('tip-images', `public/${imageName}`, img.url);
+                    const newUrl = await uploadBase64Image('seasonal-tips-images', `public/${imageName}`, img.url);
                     return { ...img, url: newUrl };
                 }
                 return img;

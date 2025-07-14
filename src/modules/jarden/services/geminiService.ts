@@ -1,5 +1,6 @@
 
 
+
 import { ai, geminiModel } from '../../../../services/gemini';
 import { Plant, PlantSectionKeyForAI, RawPlantDataFromAI, EventType } from '../types';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -196,8 +197,18 @@ export const getAiAssistedDataForPlantSection = async (
   customPrompt?: string
 ): Promise<RawPlantDataFromAI> => {
   const model = getModel();
+
+  const scientificName = existingPlantData?.plant_identification_overview?.latin_name_scientific_name;
+  const commonName = plantName;
+
+  let basePrompt;
+  if (scientificName && scientificName.toLowerCase() !== 'not specified' && scientificName.toLowerCase() !== 'n/a') {
+      basePrompt = `Generate a comprehensive data profile for the plant with scientific name "${scientificName}" (commonly known as "${commonName}").`;
+  } else {
+      basePrompt = `Generate a comprehensive data profile for the plant "${commonName}".`;
+  }
   
-  const prompt = customPrompt || `Generate a comprehensive data profile for the plant "${plantName}". ${sectionKey ? `Focus specifically on the '${sectionKey}' section.` : ''} Fill in as much detail as possible based on the provided JSON schema.`;
+  const prompt = customPrompt || `${basePrompt} ${sectionKey ? `Focus specifically on the '${sectionKey}' section.` : ''} Fill in as much detail as possible based on the provided JSON schema.`;
   
   const config = {
       responseMimeType: "application/json",

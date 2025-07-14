@@ -1,10 +1,11 @@
 
 
+
 import React, { useState, useRef } from 'react';
 import { GroundLogEntry, GroundLogActionType } from '../types';
 import { GROUND_LOG_ACTION_TYPES, MODULES } from '../constants';
 import { XMarkIcon, PhotoIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
-import { convertFileToBase64 } from '../utils/imageUtils';
+import { convertFileToBase64, compressFileBeforeUpload } from '../utils/imageUtils';
 
 interface AddLogEntryModalProps {
   isOpen: boolean;
@@ -31,12 +32,14 @@ const AddLogEntryModal: React.FC<AddLogEntryModalProps> = ({ isOpen, onClose, on
     const newPhotoBase64s = [...photoBase64s];
     if (file) {
       try {
-        const base64 = await convertFileToBase64(file);
+        const compressedFile = await compressFileBeforeUpload(file);
+        const base64 = await convertFileToBase64(compressedFile);
         newPhotoBase64s[index] = base64;
         setError(null); 
       } catch (err) {
-        console.error("Error converting file to base64:", err);
-        setError(`Failed to load image ${index + 1}. Please try another file.`);
+        console.error("Error processing file:", err);
+        const errorMessage = err instanceof Error ? err.message : "Failed to load image. Please try another file.";
+        setError(errorMessage);
         newPhotoBase64s[index] = null;
       }
     } else {

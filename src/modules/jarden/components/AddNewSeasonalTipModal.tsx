@@ -5,11 +5,12 @@ import { SeasonalTipInput, SeasonalTipContentType, TipImage } from '../types';
 import { XMarkIcon, PhotoIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { convertFileToBase64 } from '../utils/imageUtils';
 import { MODULES } from '../constants';
+import LoadingSpinner from './LoadingSpinner';
 
 interface AddNewSeasonalTipModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (tipInput: SeasonalTipInput) => void;
+  onSave: (tipInput: SeasonalTipInput) => Promise<any>;
   moduleConfig: typeof MODULES[0];
 }
 
@@ -25,6 +26,7 @@ const AddNewSeasonalTipModal: React.FC<AddNewSeasonalTipModalProps> = ({ isOpen,
   const [tags, setTags] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -59,10 +61,16 @@ const AddNewSeasonalTipModal: React.FC<AddNewSeasonalTipModalProps> = ({ isOpen,
     setTags('');
     setAuthorName('');
     setError(null);
+    setIsSaving(false);
     if(fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  const handleClose = () => {
+    clearForm();
+    onClose();
+  };
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!title.trim()) {
       setError("Title is required.");
       return;
@@ -79,17 +87,24 @@ const AddNewSeasonalTipModal: React.FC<AddNewSeasonalTipModalProps> = ({ isOpen,
     }
 
     setError(null);
-    onSave({
-      title: title.trim(),
-      description: description.trim() || undefined,
-      content_type: contentType,
-      source_url: contentType === 'url' ? sourceUrl.trim() : undefined,
-      article_markdown_content: contentType === 'article' ? articleMarkdownContent.trim() : undefined,
-      images: images,
-      tags: tags.split(',').map(t => t.trim()).filter(t => t) || undefined,
-      author_name: authorName.trim() || undefined,
-    });
-    clearForm();
+    setIsSaving(true);
+    try {
+      await onSave({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        content_type: contentType,
+        source_url: contentType === 'url' ? sourceUrl.trim() : undefined,
+        article_markdown_content: contentType === 'article' ? articleMarkdownContent.trim() : undefined,
+        images: images,
+        tags: tags.split(',').map(t => t.trim()).filter(t => t) || undefined,
+        author_name: authorName.trim() || undefined,
+      });
+      handleClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred while saving.");
+    } finally {
+      setIsSaving(false);
+    }
   };
   
   const inputBaseClass = "w-full px-3 py-2.5 border-0 border-b-2 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none sm:text-sm transition-colors";
@@ -102,7 +117,7 @@ const AddNewSeasonalTipModal: React.FC<AddNewSeasonalTipModalProps> = ({ isOpen,
         <div className="flex justify-between items-center mb-5">
           <h2 className="text-xl font-medium text-slate-800 dark:text-slate-100">Add New Seasonal Tip</h2>
           <button
-            onClick={() => { clearForm(); onClose(); }}
+            onClick={handleClose}
             className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full"
             aria-label="Close modal"
           >
@@ -199,17 +214,19 @@ const AddNewSeasonalTipModal: React.FC<AddNewSeasonalTipModalProps> = ({ isOpen,
         <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-700">
           <button
             type="button"
-            onClick={() => { clearForm(); onClose(); }}
-            className={`px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400`}
+            onClick={handleClose}
+            disabled={isSaving}
+            className={`px-4 py-2 text-sm font-medium text-${moduleConfig.baseColorClass}-700 dark:text-${moduleConfig.baseColorClass}-300 hover:bg-${moduleConfig.baseColorClass}-100 dark:hover:bg-${moduleConfig.baseColorClass}-700/30 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-${moduleConfig.baseColorClass}-400 disabled:opacity-70`}
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className={`px-6 py-2 text-sm font-medium text-white bg-${moduleConfig.baseColorClass}-600 hover:bg-${moduleConfig.baseColorClass}-700 dark:bg-${moduleConfig.baseColorClass}-500 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 focus:ring-${moduleConfig.baseColorClass}-500`}
+            disabled={isSaving}
+            className={`min-w-[110px] px-6 py-2 text-sm font-medium text-white bg-${moduleConfig.baseColorClass}-600 hover:bg-${moduleConfig.baseColorClass}-700 dark:bg-${moduleConfig.baseColorClass}-500 dark:hover:bg-${moduleConfig.baseColorClass}-600 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-800 focus:ring-${moduleConfig.baseColorClass}-500 disabled:opacity-70 flex justify-center items-center`}
           >
-            Save Tip
+            {isSaving ? <LoadingSpinner size="sm" color="text-white" /> : 'Save Tip'}
           </button>
         </div>
       </div>

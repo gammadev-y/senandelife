@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { PlantInput } from '../types';
 import { XMarkIcon, PhotoIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
-import { convertFileToBase64 } from '../utils/imageUtils';
+import { convertFileToBase64, compressFileBeforeUpload } from '../utils/imageUtils';
 import { MODULES } from '../constants'; 
 import LoadingSpinner from './LoadingSpinner';
 
@@ -28,12 +28,14 @@ const AddNewPlantModal: React.FC<AddNewPlantModalProps> = ({ isOpen, onClose, on
     const file = event.target.files?.[0];
     if (file) {
       try {
-        const base64 = await convertFileToBase64(file);
+        setError(null);
+        const compressedFile = await compressFileBeforeUpload(file);
+        const base64 = await convertFileToBase64(compressedFile);
         setImageBase64(base64);
-        setError(null); 
       } catch (err) {
-        console.error("Error converting file to base64:", err);
-        setError("Failed to load image. Please try another file.");
+        console.error("Error processing file:", err);
+        const errorMessage = err instanceof Error ? err.message : "Failed to load image. Please try another file.";
+        setError(errorMessage);
         setImageBase64(null);
       }
     }
@@ -56,17 +58,20 @@ const AddNewPlantModal: React.FC<AddNewPlantModalProps> = ({ isOpen, onClose, on
       setError("Plant common name is required.");
       return;
     }
+    if (!scientificName.trim()) {
+      setError("Scientific name is required.");
+      return;
+    }
     setError(null);
     setIsSaving(true);
     try {
       await onSave({
         common_name: commonName.trim(),
-        scientific_name: scientificName.trim() || undefined,
+        scientific_name: scientificName.trim(),
         family: family.trim() || undefined,
         display_image_url: imageBase64 || undefined, 
       });
-      // On success, the parent component closes the modal.
-      clearForm();
+      handleClose();
     } catch (err) {
         setError(err instanceof Error ? err.message : "An unknown error occurred while saving.");
     } finally {
@@ -109,20 +114,21 @@ const AddNewPlantModal: React.FC<AddNewPlantModalProps> = ({ isOpen, onClose, on
               id="plantCommonName"
               value={commonName}
               onChange={(e) => setCommonName(e.target.value)}
-              className={`${inputBaseClass} ${commonName.trim() || !error ? inputFocusClass : inputErrorClass} rounded-t-lg`}
+              className={`${inputBaseClass} ${error?.toLowerCase().includes('common name') ? inputErrorClass : inputFocusClass} rounded-t-lg`}
               required
             />
           </div>
           <div>
             <label htmlFor="scientificName" className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-              Scientific Name
+              Scientific Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               id="scientificName"
               value={scientificName}
               onChange={(e) => setScientificName(e.target.value)}
-              className={`${inputBaseClass} ${inputFocusClass} rounded-t-lg`}
+              className={`${inputBaseClass} ${error?.toLowerCase().includes('scientific name') ? inputErrorClass : inputFocusClass} rounded-t-lg`}
+              required
             />
           </div>
           <div>
