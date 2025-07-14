@@ -72,58 +72,60 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
 }) => {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedGroundData, setEditedGroundData] = useState<GrowingGround | null>(null);
+  const [editableGround, setEditableGround] = useState<GrowingGround | null>(null);
   const [isLoadingAiImage, setIsLoadingAiImage] = useState(false);
   const [plantToUpdate, setPlantToUpdate] = useState<GrowingGroundPlant | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>('details');
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
   const [showTaskArchive, setShowTaskArchive] = useState(false);
-
+  
+  const prevGroundId = useRef<string | undefined>();
   const heroImageInputRef = useRef<HTMLInputElement>(null);
   const heroImageContainerRef = useRef<HTMLDivElement>(null);
   
-  const currentImageObjectPositionY = (isEditing ? editedGroundData?.image_object_position_y : initialGround?.image_object_position_y) ?? 50;
+  const currentImageObjectPositionY = (editableGround?.image_object_position_y) ?? 50;
   
   const { dragHandlers } = useImageDragAdjust({
     initialPosition: currentImageObjectPositionY,
     onPositionChange: (newPosition) => {
-      if (isEditing && editedGroundData) {
-        setEditedGroundData(produce(draft => { if (draft) draft.image_object_position_y = newPosition; }));
+      if (isEditing && editableGround) {
+        setEditableGround(produce(draft => { if (draft) draft.image_object_position_y = newPosition; }));
       }
     },
     imageContainerRef: heroImageContainerRef,
   });
 
   useEffect(() => {
-    if (initialGround) {
-        setEditedGroundData(JSON.parse(JSON.stringify(initialGround)));
-    } else {
-        setEditedGroundData(null);
+    if (initialGround?.id !== prevGroundId.current) {
+        setActiveTab('details');
+        setIsEditing(false);
+        setIsFabMenuOpen(false);
     }
-    setIsEditing(false);
-    setIsFabMenuOpen(false);
-    setActiveTab('details');
-  }, [initialGround]);
+    if (!isEditing) {
+        setEditableGround(initialGround ? JSON.parse(JSON.stringify(initialGround)) : null);
+    }
+    prevGroundId.current = initialGround?.id;
+  }, [initialGround, isEditing]);
 
   const handleDataFieldChange = useCallback((path: string, value: any) => {
-    if (!isEditing || !editedGroundData) return;
-    setEditedGroundData(produce(draft => {
+    if (!isEditing || !editableGround) return;
+    setEditableGround(produce(draft => {
         if(!draft) return;
         let current: any = draft;
         const keys = path.split('.');
-        keys.forEach((key, index) => {
-            if(index === keys.length - 1) current[key] = value;
-            else {
-                if(!current[key] || typeof current[key] !== 'object') current[key] = {};
-                current = current[key];
+        for (let i = 0; i < keys.length - 1; i++) {
+            if (current[keys[i]] === undefined || current[keys[i]] === null) {
+                current[keys[i]] = {}; // Create nested object if it doesn't exist
             }
-        });
+            current = current[keys[i]];
+        }
+        current[keys[keys.length - 1]] = value;
     }));
-  }, [isEditing, editedGroundData]);
+  }, [isEditing, editableGround]);
   
   const handleAiGenerateImage = async () => {
-    if (!editedGroundData) return;
-    const safePlants = editedGroundData.plants || [];
+    if (!editableGround) return;
+    const safePlants = editableGround.plants || [];
     const plantNames = safePlants.map(p => plants.find(pl => pl.id === p.plantId)?.plant_identification_overview.common_names[0] || 'plant').filter(Boolean);
     if(plantNames.length === 0) { setAppError("Add plants to this ground before generating an AI image."); return; }
 
@@ -132,7 +134,7 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
     try {
       const generatedBase64Image = await generateGroundImageWithAi(plantNames);
       if (generatedBase64Image) {
-        setEditedGroundData(produce(draft => { if(draft) { draft.imageUrl = generatedBase64Image; draft.image_object_position_y = 50; }}));
+        setEditableGround(produce(draft => { if(draft) { draft.imageUrl = generatedBase64Image; draft.image_object_position_y = 50; }}));
       } else {
         setAppError("AI image generation did not return an image.");
       }
@@ -144,12 +146,12 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
   };
   
   const handleHeroImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (isEditing && event.target.files?.[0] && editedGroundData) {
+    if (isEditing && event.target.files?.[0] && editableGround) {
       try {
         const file = event.target.files[0];
         const compressedFile = await compressFileBeforeUpload(file);
         const base64 = await convertFileToBase64(compressedFile);
-        setEditedGroundData(produce(draft => { if(draft) { draft.imageUrl = base64; draft.image_object_position_y = 50; }}));
+        setEditableGround(produce(draft => { if(draft) { draft.imageUrl = base64; draft.image_object_position_y = 50; }}));
       } catch (err) {
         setAppError(err instanceof Error ? err.message : 'Image processing failed.');
       }
@@ -158,8 +160,8 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
 
 
   const handleSave = () => {
-    if (editedGroundData && initialGround) {
-        onUpdateGround(initialGround.id, editedGroundData);
+    if (editableGround && initialGround) {
+        onUpdateGround(initialGround.id, editableGround);
     }
     setIsEditing(false);
     setIsFabMenuOpen(false);
@@ -167,7 +169,7 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
   
   const handleCancel = () => {
     setIsEditing(false);
-    setEditedGroundData(initialGround ? JSON.parse(JSON.stringify(initialGround)) : null);
+    setEditableGround(initialGround ? JSON.parse(JSON.stringify(initialGround)) : null);
   };
 
   const handleDelete = () => {
@@ -177,8 +179,8 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
   };
   
   const handleRemovePlantFromGround = (indexToRemove: number) => {
-    if (isEditing && editedGroundData) {
-        setEditedGroundData(produce(draft => {
+    if (isEditing && editableGround) {
+        setEditableGround(produce(draft => {
             if (draft?.plants) draft.plants.splice(indexToRemove, 1);
         }));
     }
@@ -252,24 +254,25 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
             <button onClick={() => { onOpenAddEventForGround(initialGround.id); setIsFabMenuOpen(false); }} className="flex items-center gap-3 bg-violet-100 dark:bg-violet-200 text-violet-800 dark:text-violet-900 pl-4 pr-5 py-3 rounded-full shadow-lg hover:bg-violet-200 dark:hover:bg-violet-300 transition-all">
                 <span className="font-medium text-sm">Add Task</span> <CalendarDaysIcon className="w-5 h-5"/> 
             </button>
-             <button onClick={() => { onAiGenerateGroundTasks(initialGround.id); setIsFabMenuOpen(false); }} className="flex items-center gap-3 bg-violet-100 dark:bg-violet-200 text-violet-800 dark:text-violet-900 pl-4 pr-5 py-3 rounded-full shadow-lg hover:bg-violet-200 dark:hover:bg-violet-300 transition-all">
-                <span className="font-medium text-sm">AI Tasks</span> <FireIcon className="w-5 h-5"/>
+             <button onClick={() => { onAiGenerateGroundTasks(initialGround.id); setIsFabMenuOpen(false); }} disabled={isLoadingAiForGroundTasks} className="flex items-center gap-3 bg-violet-100 dark:bg-violet-200 text-violet-800 dark:text-violet-900 pl-4 pr-5 py-3 rounded-full shadow-lg hover:bg-violet-200 dark:hover:bg-violet-300 transition-all disabled:opacity-70">
+                <span className="font-medium text-sm">AI Tasks</span> {isLoadingAiForGroundTasks ? <LoadingSpinner size="sm" /> : <FireIcon className="w-5 h-5"/>}
             </button>
           </div>
         )}
         <button
-          onClick={() => setIsFabMenuOpen(!isFabMenuOpen)}
-          className={`flex items-center justify-center bg-violet-600 text-white shadow-lg hover:bg-violet-700 transition-all duration-200 ease-in-out ${isFabMenuOpen ? 'w-14 h-14 rounded-full' : 'w-16 h-16 rounded-2xl'}`}
+          onClick={() => !isLoadingAiForGroundTasks && setIsFabMenuOpen(!isFabMenuOpen)}
+          disabled={isLoadingAiForGroundTasks}
+          className={`flex items-center justify-center bg-violet-600 text-white shadow-lg hover:bg-violet-700 transition-all duration-200 ease-in-out disabled:opacity-70 disabled:cursor-not-allowed ${isFabMenuOpen ? 'w-14 h-14 rounded-full' : 'w-16 h-16 rounded-2xl'}`}
           aria-label={isFabMenuOpen ? 'Close menu' : 'Open actions menu'}
           aria-expanded={isFabMenuOpen}
         >
-          <span className="text-2xl transition-transform duration-300 ease-in-out">{isFabMenuOpen ? '✕' : '✨'}</span>
+          {isLoadingAiForGroundTasks ? <LoadingSpinner size="md" color="text-white"/> : <span className="text-2xl transition-transform duration-300 ease-in-out">{isFabMenuOpen ? '✕' : '✨'}</span>}
         </button>
       </div>
     );
   };
   
-  if (!initialGround) {
+  if (!initialGround || !editableGround) {
     return (
       <div className="hidden lg:flex flex-col items-center justify-center h-full text-center p-8 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400">
         <GroundStockIcon className={`w-24 h-24 text-${moduleConfig.baseColorClass}-400 mb-6`} />
@@ -279,8 +282,7 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
     );
   }
   
-  const groundForDisplay = isEditing ? editedGroundData : initialGround;
-  if (!groundForDisplay) return null;
+  const groundForDisplay = editableGround;
   
   const renderTabContent = () => {
       switch (activeTab) {
@@ -326,7 +328,7 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
               return (
                   <SectionCard title="Plants" icon={PlusIcon}>
                       {(groundForDisplay.plants || []).length > 0 ? (
-                          <div className="space-y-3">{(groundForDisplay.plants || []).map((p, i) => <PlantInGroundCard key={p.plantId + i} plantInGround={p} allPlants={plants} isEditing={isEditing} onRemove={() => handleRemovePlantFromGround(i)} onUpdateStageClick={() => setPlantToUpdate(p)} />)}</div>
+                          <div className="space-y-3">{(groundForDisplay.plants || []).map((p, i) => <PlantInGroundCard key={p.plantId + i} plantInGround={p} allPlants={plants} isEditing={isEditing} onRemove={() => handleRemovePlantFromGround(i)} onUpdateStageClick={setPlantToUpdate} />)}</div>
                       ) : (<p className="text-slate-500 dark:text-slate-400 text-sm italic">No plants added yet.</p>)}
                   </SectionCard>
               );
@@ -386,7 +388,7 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
       }
   };
 
-  const plantToUpdateInfo = plantToUpdate ? plants.find(p => p.id === plantToUpdate.plantId) : null;
+  const plantInfoForModal = plantToUpdate ? plants.find(p => p.id === plantToUpdate.plantId) : null;
 
   return (
     <div className="h-full bg-slate-100 dark:bg-slate-900 flex flex-col relative">
@@ -439,8 +441,8 @@ const GrowingGroundDetailView: React.FC<GrowingGroundDetailViewProps> = ({
       {/* FAB System */}
       <FabSystem />
 
-      {plantToUpdate && plantToUpdateInfo && (
-        <UpdatePlantStageModal isOpen={!!plantToUpdate} onClose={() => setPlantToUpdate(null)} onSave={handleSavePlantStage} plantInGround={plantToUpdate} plantInfo={plantToUpdateInfo} moduleConfig={moduleConfig}/>
+      {plantToUpdate && plantInfoForModal && (
+        <UpdatePlantStageModal isOpen={!!plantToUpdate} onClose={() => setPlantToUpdate(null)} onSave={handleSavePlantStage} plantInGround={plantToUpdate} plantInfo={plantInfoForModal} moduleConfig={moduleConfig}/>
       )}
     </div>
   );

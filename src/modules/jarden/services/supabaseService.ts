@@ -9,7 +9,7 @@ import {
   EventType, CalendarEvent, CalendarEventViewModel
 } from '../types';
 import { PlantListItemData, SeasonalTipListItemData } from './idbServiceTypes'; 
-import { produce } from 'immer' ;
+import { produce } from 'https://esm.sh/immer@10.0.3' ;
 import { INITIAL_PLANTS_DATA_FOR_SEEDING, INITIAL_FERTILIZERS_DATA_FOR_SEEDING, INITIAL_COMPOSTING_METHODS_DATA_FOR_SEEDING } from './supabaseSeedData';
 import { EVENT_TYPES_SEED_DATA } from '../constants';
 import { decode } from 'base64-arraybuffer';

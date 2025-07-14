@@ -19,7 +19,7 @@ import {
   PencilIcon, CheckIcon,
   ExclamationTriangleIcon, LinkIcon,
   SparklesIcon as OutlineSparklesIcon,
-  UsersIcon, GiftIcon, PlusIcon, PhotoIcon, XMarkIcon
+  UsersIcon, GiftIcon, PlusIcon, PhotoIcon, XMarkIcon, FireIcon
 } from '@heroicons/react/24/outline';
 
 
@@ -147,47 +147,50 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
-  const [editedData, setEditedData] = useState<Partial<Plant>>({});
+  const [editablePlant, setEditablePlant] = useState<Plant | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const prevPlantId = useRef<string | undefined>();
 
   useEffect(() => {
-    // Reset state when plant prop changes
-    setIsEditing(false);
-    setIsFabMenuOpen(false);
-    setEditedData({});
-    setActiveTab('overview');
-  }, [plant]);
+    // Only reset UI state if the actual plant changes
+    if (plant?.id !== prevPlantId.current) {
+        setActiveTab('overview');
+        setIsEditing(false);
+        setIsFabMenuOpen(false);
+    }
+    // Sync editable copy if not in edit mode
+    if (!isEditing) {
+        setEditablePlant(plant ? JSON.parse(JSON.stringify(plant)) : null);
+    }
+    prevPlantId.current = plant?.id;
+  }, [plant, isEditing]);
   
-  const currentPlant = isEditing ? { ...plant, ...editedData } as Plant : plant;
-
   const handleFieldChange = (path: string, value: any) => {
-    if (!isEditing) return;
-    setEditedData(produce(draft => {
-      let current: any = draft;
-      const keys = path.split('.');
-      keys.forEach((key, index) => {
-        if (index === keys.length - 1) {
-          current[key] = value;
-        } else {
-          if (!current[key] || typeof current[key] !== 'object') current[key] = {};
-          current = current[key];
+    if (!editablePlant) return;
+    setEditablePlant(produce(draft => {
+        if (!draft) return;
+        let current: any = draft;
+        const keys = path.split('.');
+        for (let i = 0; i < keys.length - 1; i++) {
+            if (current[keys[i]] === undefined || current[keys[i]] === null) {
+                current[keys[i]] = {};
+            }
+            current = current[keys[i]];
         }
-      });
+        current[keys[keys.length - 1]] = value;
     }));
   };
 
   const handleSave = () => {
-    if (plant && Object.keys(editedData).length > 0) {
-      onUpdatePlant(plant.id, editedData);
+    if (plant && editablePlant) {
+      onUpdatePlant(plant.id, editablePlant);
     }
     setIsEditing(false);
-    setEditedData({});
-    setIsFabMenuOpen(false);
   };
   
   const handleCancel = () => {
     setIsEditing(false);
-    setEditedData({});
+    setEditablePlant(null); // This will cause useEffect to re-sync from prop
   };
   
   const handleAiGenerateImage = async () => {
@@ -195,7 +198,7 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
     setAppError(null);
     setIsLoadingAi(true);
     try {
-        const generatedBase64Image = await generatePlantImageWithAi(plant.plant_identification_overview.common_names[0]);
+        const generatedBase64Image = await generatePlantImageWithAi(plant.plant_identification_overview.common_names[0] || 'plant');
         if (generatedBase64Image) {
             onUpdatePlant(plant.id, { display_image_url: generatedBase64Image, image_object_position_y: 50 });
         } else {
@@ -291,7 +294,7 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
   };
 
 
-  if (!currentPlant) {
+  if (!plant) {
     return (
       <div className="hidden lg:flex flex-col items-center justify-center h-full text-center p-8 bg-white dark:bg-slate-800">
         <PlantStockIcon className={`w-24 h-24 text-${moduleConfig.baseColorClass}-400 mb-6`} />
@@ -300,6 +303,8 @@ const PlantDetailView: React.FC<PlantDetailViewProps> = ({
       </div>
     );
   }
+
+  const currentPlant = editablePlant || plant;
   
   const TABS: { id: ActiveTab; label: string }[] = [
     { id: 'overview', label: '🧬 Overview' },
