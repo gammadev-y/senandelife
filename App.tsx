@@ -6,7 +6,10 @@ import { MemoryRouter, Routes, Route, Outlet } from 'react-router-dom';
 // This AuthProvider should be the REAL one from your Jarden project,
 // not the placeholder. Ensure you have moved the feature-rich AuthContext.tsx
 // from Jarden into the main 'src/context/' folder.
-import { AuthProvider } from './context/AuthContext';
+import { SessionContextProvider } from '@supabase/auth-helpers-react';
+import { supabase } from './services/supabase';
+import SignInPage from './pages/SignInPage';
+import ProfilePage from './pages/ProfilePage';
 
 // --- Shared Components & Pages ---
 // These are part of the main application shell.
@@ -45,20 +48,20 @@ const LayoutWrapper: React.FC = () => (
  */
 const App: React.FC = () => {
   return (
-    // The single, global AuthProvider wraps the entire application,
-    // ensuring consistent authentication state across all modules.
-    <AuthProvider>
+    <SessionContextProvider supabaseClient={supabase}>
       <MemoryRouter>
         {/* Suspense is required to handle the "waiting" state of lazy-loaded modules */}
         <Suspense fallback={<FullscreenLoader />}>
           <Routes>
             {/* The Landing Page is now standalone to allow for its unique full-page design */}
             <Route path="/" element={<LandingPage />} />
+            <Route path="/signin" element={<SignInPage />} />
 
             {/* Routes that use the shared Layout (e.g., main site pages) */}
             <Route element={<LayoutWrapper />}>
               <Route path="/about" element={<AboutPage />} />
               <Route path="/educa/*" element={<EducaModule />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
 
             {/* Jarden module route, which provides its own complete layout */}
@@ -68,7 +71,7 @@ const App: React.FC = () => {
           </Routes>
         </Suspense>
       </MemoryRouter>
-    </AuthProvider>
+    </SessionContextProvider>
   );
 };
 

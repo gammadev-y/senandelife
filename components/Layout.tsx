@@ -2,12 +2,19 @@
 import React, { ReactNode, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { XMarkIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
 
 
 // Header Component
 // Updated with a functional mobile menu and static positioning to prevent layout shifts.
 const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const session = useSession();
+  const supabase = useSupabaseClient();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
 
   return (
     <header className="relative bg-[#0A1A10] z-20">
@@ -21,11 +28,22 @@ const Header: React.FC = () => {
               <Link to="/jarden" className="text-sm hover:text-white transition-colors duration-300">Jarden</Link>
               <Link to="/about" className="text-sm opacity-60 hover:opacity-100 hover:text-white transition-colors duration-300">About</Link>
             </nav>
-            <button className="text-white/90 hover:text-white transition-colors duration-300" aria-label="Sign in">
-             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-            </svg>
-          </button>
+            {session ? (
+              <div className="flex items-center space-x-4">
+                <Link to="/profile" className="text-white/90 hover:text-white transition-colors duration-300" aria-label="Profile">
+                  Profile
+                </Link>
+                <button onClick={handleSignOut} className="text-white/90 hover:text-white transition-colors duration-300" aria-label="Sign out">
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <Link to="/signin" className="text-white/90 hover:text-white transition-colors duration-300" aria-label="Sign in">
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+              </Link>
+            )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -62,12 +80,21 @@ const Header: React.FC = () => {
               <Link to="/jarden" onClick={() => setIsMobileMenuOpen(false)} className="text-white/90 hover:bg-white/10 block px-3 py-3 rounded-md text-lg font-medium">Jarden</Link>
               <Link to="/about" onClick={() => setIsMobileMenuOpen(false)} className="text-white/90 hover:bg-white/10 block px-3 py-3 rounded-md text-lg font-medium">About</Link>
               <div className="border-t border-white/20 pt-4 mt-4">
-                <button className="w-full flex items-center text-left text-white/90 hover:bg-white/10 px-3 py-3 rounded-md text-lg font-medium" aria-label="Sign in">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                    </svg>
-                    Sign In
-                </button>
+                {session ? (
+                  <>
+                    <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="text-white/90 hover:bg-white/10 block px-3 py-3 rounded-md text-lg font-medium">Profile</Link>
+                    <button onClick={handleSignOut} className="w-full flex items-center text-left text-white/90 hover:bg-white/10 px-3 py-3 rounded-md text-lg font-medium" aria-label="Sign out">
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <Link to="/signin" onClick={() => setIsMobileMenuOpen(false)} className="w-full flex items-center text-left text-white/90 hover:bg-white/10 px-3 py-3 rounded-md text-lg font-medium" aria-label="Sign in">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                      </svg>
+                      Sign In
+                  </Link>
+                )}
               </div>
             </nav>
           </div>

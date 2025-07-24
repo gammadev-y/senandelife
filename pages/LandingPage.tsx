@@ -8,8 +8,8 @@ const LandingHeader = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   return (
     <header className="absolute top-0 left-0 right-0 z-50 text-white">
-      <div className="w-full flex justify-between items-center px-6 lg:px-8 py-4 relative z-10" style={{ background: 'linear-gradient(to bottom, rgba(2, 4, 10, 0.7) 0%, rgba(2, 4, 10, 0) 100%)' }}>
-        <Link to="/" className="text-xl font-bold tracking-widest" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.7)' }}>SENANDE.LIFE</Link>
+      <div className="w-full flex justify-between items-center px-6 lg:px-8 py-4 relative z-10 bg-gradient-to-b from-black/70 to-transparent">
+        <Link to="/" className="text-xl font-bold tracking-widest text-shadow-lg">SENANDE.LIFE</Link>
         <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
           <nav className="flex items-center space-x-6 lg:space-x-8 text-white/90">
             <Link to="/educa" className="text-sm hover:text-white transition-colors duration-300">Educa</Link>
@@ -31,14 +31,7 @@ const LandingHeader = () => {
             <div className="p-4 flex justify-end border-b border-lime-300/10 relative">
                 <button onClick={() => setIsMobileMenuOpen(false)} className="text-white p-2 rounded-md"><XMarkIcon className="h-6 w-6" /></button>
                 <div className="absolute bottom-[-1px] left-0 right-0 h-px w-full overflow-hidden">
-                    <div 
-                        className="h-full animate-breathing-line" 
-                        style={{
-                            backgroundImage: 'linear-gradient(to right, transparent, rgba(163, 230, 53, 0.7), transparent)',
-                            backgroundSize: '50% 100%',
-                            backgroundRepeat: 'no-repeat',
-                        }}
-                    />
+                    <div className="h-full animate-breathing-line bg-gradient-to-r from-transparent via-lime-300/70 to-transparent bg-[length:50%_100%] bg-no-repeat" />
                 </div>
             </div>
             <nav className="flex flex-col space-y-2 p-4">
@@ -50,14 +43,7 @@ const LandingHeader = () => {
         </>
       )}
        <div className="absolute bottom-0 left-0 right-0 h-px w-full overflow-hidden">
-        <div 
-            className="h-full animate-breathing-line" 
-            style={{
-                backgroundImage: 'linear-gradient(to right, transparent, rgba(163, 230, 53, 0.7), transparent)',
-                backgroundSize: '50% 100%',
-                backgroundRepeat: 'no-repeat',
-            }}
-        />
+        <div className="h-full animate-breathing-line bg-gradient-to-r from-transparent via-lime-300/70 to-transparent bg-[length:50%_100%] bg-no-repeat" />
       </div>
     </header>
   );
@@ -122,14 +108,14 @@ const TreeOfLifeSVG = ({ scrollProgress }: { scrollProgress: number }) => {
           M950,4200 C 930,4160, 960,4120, 920,4080
           M950,4200 C 900,4180, 880,4150, 890,4100
           M950,4200 C 880,4190, 850,4120, 860,4070
-        " stroke="url(#treeGradient)" strokeWidth="15" strokeLinecap="round" fill="none" style={{ transition: 'stroke-dashoffset 0.2s linear' }} />
+        " stroke="url(#treeGradient)" strokeWidth="15" strokeLinecap="round" fill="none" className="transition-all duration-200 ease-linear" />
         {/* Main Trunk */}
-        <path ref={trunkRef} d="M950,4200 C 900,3900 1000,3600 900,3300 C800,3000 950,2200 850,1400 C750,800 650,400 500,200" stroke="url(#treeGradient)" strokeWidth="35" strokeLinecap="round" fill="none" style={{ transition: 'stroke-dashoffset 0.2s linear' }} />
+        <path ref={trunkRef} d="M950,4200 C 900,3900 1000,3600 900,3300 C800,3000 950,2200 850,1400 C750,800 650,400 500,200" stroke="url(#treeGradient)" strokeWidth="35" strokeLinecap="round" fill="none" className="transition-all duration-200 ease-linear" />
         {/* Canopy */}
-        <path ref={canopyRef} d="M500,200 Q 300,150 200,300 Q 100,450 300,500 Q 500,550 700,500 Q 900,450 800,300 Q 700,150 500,200" stroke="url(#treeGradient)" strokeWidth="25" strokeLinecap="round" fill="none" style={{ transition: 'stroke-dashoffset 0.2s linear' }} />
+        <path ref={canopyRef} d="M500,200 Q 300,150 200,300 Q 100,450 300,500 Q 500,550 700,500 Q 900,450 800,300 Q 700,150 500,200" stroke="url(#treeGradient)" strokeWidth="25" strokeLinecap="round" fill="none" className="transition-all duration-200 ease-linear" />
         {/* Section Branches */}
-        <path ref={branch1Ref} d="M885,3050 C 600,3100, 300,2950, 100,3150" stroke="url(#treeGradient)" strokeWidth="20" strokeLinecap="round" fill="none" style={{ transition: 'stroke-dashoffset 0.2s linear' }} />
-        <path ref={branch2Ref} d="M830,1600 C 600,1650, 300,1500, 100,1700" stroke="url(#treeGradient)" strokeWidth="20" strokeLinecap="round" fill="none" style={{ transition: 'stroke-dashoffset 0.2s linear' }} />
+        <path ref={branch1Ref} d="M885,3050 C 600,3100, 300,2950, 100,3150" stroke="url(#treeGradient)" strokeWidth="20" strokeLinecap="round" fill="none" className="transition-all duration-200 ease-linear" />
+        <path ref={branch2Ref} d="M830,1600 C 600,1650, 300,1500, 100,1700" stroke="url(#treeGradient)" strokeWidth="20" strokeLinecap="round" fill="none" className="transition-all duration-200 ease-linear" />
       </g>
     </svg>
   );
@@ -204,19 +190,19 @@ const BreedLifeButton = () => (
 
 const HangingVines = memo(() => (
   <div className="absolute top-0 left-0 right-0 h-48 pointer-events-none z-40 overflow-hidden">
-    <div className="absolute top-[-10px] left-[10%] w-[25px] text-lime-300/60 opacity-60 animate-slay-1 origin-top-left" style={{ animationDelay: '0s' }}>
+    <div className="absolute top-[-10px] left-[10%] w-[25px] text-lime-300/60 opacity-60 animate-slay-1 origin-top-left [animation-delay:0s]">
       <Icon1 />
     </div>
-    <div className="absolute top-[-5px] left-[30%] w-[18px] text-lime-300/50 opacity-50 animate-slay-3 origin-center-top" style={{ animationDelay: '1.5s', transform: 'scaleX(-1)' }}>
+    <div className="absolute top-[-5px] left-[30%] w-[18px] text-lime-300/50 opacity-50 animate-slay-3 origin-center-top [animation-delay:1.5s] -scale-x-100">
       <Icon3 />
     </div>
-    <div className="absolute top-[-8px] left-[55%] w-[12px] text-lime-300/70 opacity-70 animate-slay-2 origin-center-top" style={{ animationDelay: '3s' }}>
+    <div className="absolute top-[-8px] left-[55%] w-[12px] text-lime-300/70 opacity-70 animate-slay-2 origin-center-top [animation-delay:3s]">
       <Icon2 />
     </div>
-    <div className="absolute top-[-12px] left-[75%] w-[25px] text-lime-300/50 opacity-50 animate-slay-1 origin-top-left" style={{ animationDelay: '0.8s', transform: 'scaleX(-1)' }}>
+    <div className="absolute top-[-12px] left-[75%] w-[25px] text-lime-300/50 opacity-50 animate-slay-1 origin-top-left [animation-delay:0.8s] -scale-x-100">
       <Icon1 />
     </div>
-    <div className="absolute top-[-4px] left-[90%] w-[18px] text-lime-300/60 opacity-60 animate-slay-3 origin-center-top" style={{ animationDelay: '2.2s' }}>
+    <div className="absolute top-[-4px] left-[90%] w-[18px] text-lime-300/60 opacity-60 animate-slay-3 origin-center-top [animation-delay:2.2s]">
       <Icon3 />
     </div>
   </div>
@@ -237,11 +223,6 @@ const LandingPage: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const heroBackgroundStyle = {
-    backgroundImage: `url(https://i.imgur.com/sKzQZEp.png)`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center'
-  };
 
   return (
     <div className="bg-[#02040a] font-sans text-white">
@@ -250,10 +231,10 @@ const LandingPage: React.FC = () => {
       <TreeOfLifeSVG scrollProgress={scrollProgress} />
       
       <main className="relative z-20">
-        <section className="min-h-screen flex flex-col items-center justify-center text-white overflow-hidden relative" style={heroBackgroundStyle}>
+        <section className="min-h-screen flex flex-col items-center justify-center text-white overflow-hidden relative bg-cover bg-center" style={{backgroundImage: `url(https://i.imgur.com/sKzQZEp.png)`}}>
           <div className="absolute inset-0 bg-black/40"></div>
           <div className="relative z-30 text-center px-4 animate-fade-in-up">
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-4" style={{textShadow: '0 4px 30px rgba(0,0,0,0.8)'}}>
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-4 text-shadow-xl">
               Empowering<br />Sustainable Living
             </h1>
             <p className="max-w-2xl mx-auto text-lg md:text-xl text-white/80 mb-12">
@@ -291,7 +272,7 @@ const LandingPage: React.FC = () => {
       <footer className="relative py-48 px-4 z-10 text-center overflow-hidden bg-[#0a0603]">
         <div className="absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-[#0a0603] via-transparent to-transparent"></div>
         <div className="container mx-auto text-lime-100/60 relative z-10">
-            <p className="text-lg font-bold mb-2" style={{textShadow: '0 1px 10px rgba(173, 255, 47, 0.3)'}}>senande.life</p>
+            <p className="text-lg font-bold mb-2 text-shadow-[0_1px_10px_rgba(173,255,47,0.3)]">senande.life</p>
             <p className="text-sm">© {new Date().getFullYear()} - Cultivating a sustainable future, together.</p>
         </div>
       </footer>
